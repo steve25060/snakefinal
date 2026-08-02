@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game - Snake MCQ Challenge</title>
+    <link rel="stylesheet" href="css/style.css?v=10.0">
+    <link rel="stylesheet" href="css/responsive.css?v=10.0">
+    <link rel="stylesheet" href="css/game.css?v=10.0">
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="moon"></div>
+
+    <div class="game-container">
+        <!-- Game Header / Arcade HUD -->
+        <div class="game-header">
+            <div class="game-header-item">
+                <span class="game-label">Language</span>
+                <span class="game-value" id="languageDisplay">-</span>
+            </div>
+            <div class="game-header-item">
+                <span class="game-label">Question</span>
+                <span class="game-value" id="questionNum">1/20</span>
+            </div>
+            <div class="game-header-item">
+                <span class="game-label">Score</span>
+                <span class="game-value" id="score" style="color: #34d399;">0</span>
+            </div>
+            <div class="game-header-item">
+                <span class="game-label">Phase Time</span>
+                <span class="game-value" id="timer" style="color: #f59e0b;">20s</span>
+            </div>
+            <div class="game-header-item">
+                <span class="game-label">Total Real Time</span>
+                <span class="game-value" id="realTimer" style="color: #38bdf8;">00:00</span>
+            </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="game-area">
+            <div class="game-content">
+                <!-- Question Screen -->
+                <div id="questionScreen" class="screen active">
+                    <div class="question-box">
+                        <h2 id="questionText">Loading question...</h2>
+                        <div class="options-container">
+                            <div class="option-box" id="optA">
+                                <span class="option-label">A</span>
+                                <span class="option-text" id="optAText">-</span>
+                            </div>
+                            <div class="option-box" id="optB">
+                                <span class="option-label">B</span>
+                                <span class="option-text" id="optBText">-</span>
+                            </div>
+                            <div class="option-box" id="optC">
+                                <span class="option-label">C</span>
+                                <span class="option-text" id="optCText">-</span>
+                            </div>
+                            <div class="option-box" id="optD">
+                                <span class="option-label">D</span>
+                                <span class="option-text" id="optDText">-</span>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 30px;">
+                            <button class="btn btn-primary btn-large" onclick="skipToGame()">
+                                🚀 NEXT: Play Snake Game
+                            </button>
+                            <p style="color: var(--text-secondary); margin-top: 15px; font-size: 0.95rem;">
+                                or wait <span id="autoRedirectCount" style="color: #38bdf8; font-weight: bold;">20</span>s for automatic redirect
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Snake Game Screen -->
+                <div id="gameScreen" class="screen">
+                    <canvas id="gameCanvas" class="game-board" width="600" height="600"></canvas>
+                </div>
+
+                <!-- Result Screen -->
+                <div id="resultScreen" class="screen">
+                    <div class="result-box">
+                        <div id="resultMessage"></div>
+                        <div id="resultPoints"></div>
+                        <button class="btn btn-primary btn-large" onclick="nextQuestion()">Next Question ➔</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Game Controls - ONLY VISIBLE ON GAME SCREEN -->
+        <div class="game-controls" id="gameControls" style="display: none;">
+            <button id="upBtn" class="control-btn" onclick="moveSnake('UP')" ontouchstart="moveSnake('UP'); event.preventDefault();">▲</button>
+            <div style="display: flex; gap: 12px;">
+                <button id="leftBtn" class="control-btn" onclick="moveSnake('LEFT')" ontouchstart="moveSnake('LEFT'); event.preventDefault();">◀</button>
+                <button id="downBtn" class="control-btn" onclick="moveSnake('DOWN')" ontouchstart="moveSnake('DOWN'); event.preventDefault();">▼</button>
+                <button id="rightBtn" class="control-btn" onclick="moveSnake('RIGHT')" ontouchstart="moveSnake('RIGHT'); event.preventDefault();">▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dedicated ESC & Fullscreen Violation Warning Page Overlay (Top-Level Body Child) -->
+    <div id="warningOverlay" class="warning-overlay" style="display: none;">
+        <div class="warning-modal">
+            <div class="warning-icon-wrap">
+                <span class="warning-animated-icon">⚠️</span>
+            </div>
+            <h1 class="warning-title" id="warningTitleText">FULLSCREEN VIOLATION DETECTED!</h1>
+            <div class="warning-badge-box">
+                <span class="warning-badge" id="warningBadgeText">WARNING 1 OF 2</span>
+            </div>
+            <p class="warning-reason" id="warningReasonText">You pressed ESC key or attempted to exit fullscreen mode.</p>
+            
+            <div class="warning-info-card">
+                <h3>🚨 STRICT ANTI-CHEAT RULE</h3>
+                <p>Staying in <strong>Full Screen mode</strong> is mandatory during the Snake MCQ Challenge.</p>
+                <p style="color: #ef4444; font-weight: 700; margin-top: 10px;">
+                    ⚠️ FINAL WARNING: If you press ESC or exit fullscreen 1 more time, your challenge will be IMMEDIATELY TERMINATED & DISQUALIFIED!
+                </p>
+            </div>
+
+            <button class="btn btn-primary btn-large warning-action-btn" id="warningActionBtn" onclick="resumeFullscreenAndGame()">
+                🔒 RE-ENTER FULLSCREEN & RESUME GAME
+            </button>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=12.0"></script>
+    <script src="js/app.js?v=12.0"></script>
+    <script src="js/snake-simple.js?v=12.0"></script>
+    <script>
+        // Game constants
+        const READING_TIME = 20;      // 20 seconds to read question
+        const GAME_TIME = 30;         // 30 seconds to play snake game
+        
+        // Game state
+        var currentQuestion = 1;
+        var gameSession = null;
+        var phaseTimer = null;
+        var realTimerInterval = null;
+        var gameStartTimestamp = null;
+        var timeRemaining = READING_TIME;
+        var isReadingPhase = true;
+        var currentGameData = null;
+
+        // Fullscreen & Anti-Cheat State
+        var fullscreenWarnings = 0;
+        var maxFullscreenWarnings = 2;
+        var isGameTerminated = false;
+
+        function requestFullscreenMode() {
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) {
+                docEl.requestFullscreen().catch(err => console.log('Fullscreen request suppressed until user click'));
+            } else if (docEl.webkitRequestFullscreen) {
+                docEl.webkitRequestFullscreen();
+            } else if (docEl.msRequestFullscreen) {
+                docEl.msRequestFullscreen();
+            }
+        }
+
+        function isFullscreenActive() {
+            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+        }
+
+        function setupFullscreenEnforcement() {
+            // Auto request fullscreen on any page click if not in fullscreen
+            document.addEventListener('click', () => {
+                if (!isFullscreenActive() && !isGameTerminated) {
+                    requestFullscreenMode();
+                }
+            });
+
+            // Listen for Fullscreen Exit
+            const handleFullscreenExit = () => {
+                if (isGameTerminated) return;
+                if (!isFullscreenActive()) {
+                    handleFullscreenViolation('Exited Fullscreen Mode');
+                }
+            };
+
+            document.addEventListener('fullscreenchange', handleFullscreenExit);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenExit);
+            document.addEventListener('msfullscreenchange', handleFullscreenExit);
+
+            // Listen for ESC or F11 keypress
+            document.addEventListener('keydown', (e) => {
+                if (isGameTerminated) return;
+                if (e.key === 'Escape' || e.key === 'F11') {
+                    e.preventDefault();
+                    handleFullscreenViolation(`Pressed ${e.key} key`);
+                }
+            });
+        }
+
+        async function handleFullscreenViolation(reason) {
+            if (isGameTerminated) return;
+            
+            fullscreenWarnings++;
+            console.warn(`⚠️ Fullscreen Violation (${fullscreenWarnings}/${maxFullscreenWarnings}): ${reason}`);
+
+            const warningOverlay = document.getElementById('warningOverlay');
+            const badgeText = document.getElementById('warningBadgeText');
+            const reasonText = document.getElementById('warningReasonText');
+            const actionBtn = document.getElementById('warningActionBtn');
+            const warningTitle = document.getElementById('warningTitleText');
+
+            if (fullscreenWarnings < maxFullscreenWarnings) {
+                warningTitle.textContent = "FULLSCREEN VIOLATION DETECTED!";
+                badgeText.textContent = `WARNING ${fullscreenWarnings} OF ${maxFullscreenWarnings}`;
+                reasonText.innerHTML = `You left Fullscreen mode (<strong>${reason}</strong>). Staying in full screen is mandatory.`;
+                actionBtn.innerHTML = "🔒 RE-ENTER FULLSCREEN & RESUME GAME";
+                actionBtn.onclick = resumeFullscreenAndGame;
+                
+                if (warningOverlay) warningOverlay.style.display = 'flex';
+            } else {
+                isGameTerminated = true;
+                if (realTimerInterval) clearInterval(realTimerInterval);
+                if (phaseTimer) clearInterval(phaseTimer);
+
+                warningTitle.textContent = "❌ GAME TERMINATED!";
+                badgeText.textContent = "DISQUALIFIED";
+                reasonText.innerHTML = `You have violated the fullscreen policy <strong>2 times</strong> (${reason}). Your challenge has been terminated.`;
+                actionBtn.innerHTML = "📊 VIEW FINAL SUMMARY & RESULT ➔";
+                actionBtn.onclick = terminateAndRedirectToSummary;
+
+                if (warningOverlay) warningOverlay.style.display = 'flex';
+            }
+        }
+
+        function resumeFullscreenAndGame() {
+            requestFullscreenMode();
+            const warningOverlay = document.getElementById('warningOverlay');
+            if (warningOverlay) warningOverlay.style.display = 'none';
+        }
+
+        async function terminateAndRedirectToSummary() {
+            const startTime = parseInt(localStorage.getItem('gameStartTime') || Date.now());
+            const totalSecs = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+
+            try {
+                const res = await Game.completeGame(totalSecs);
+                if (res && res.user) {
+                    localStorage.setItem('playerGameSummary', JSON.stringify(res.user));
+                }
+            } catch (e) {
+                console.error('Termination complete error:', e);
+            }
+
+            window.location.href = 'summary.html';
+        }
+
+        // Initialize game on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            requireLogin();
+            setupFullscreenEnforcement();
+            requestFullscreenMode();
+            
+            try {
+                // Get selected language
+                const selectedLanguage = localStorage.getItem('selectedLanguage') || 'python';
+                document.getElementById('languageDisplay').textContent = selectedLanguage.toUpperCase();
+
+                // Get session token from localStorage
+                let sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN) || localStorage.getItem('sessionToken');
+                
+                // If no session exists, redirect back to login
+                if (!sessionToken) {
+                    console.error('No session token found');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                // Start reading phase for first question
+                startReadingPhase();
+            } catch (error) {
+                console.error('Game initialization error:', error);
+                alert('An error occurred while starting the game.');
+                window.location.href = 'login.html';
+            }
+        });
+
+        function startRealGameTimer() {
+            if (realTimerInterval) clearInterval(realTimerInterval);
+            
+            let savedStart = localStorage.getItem('gameStartTime');
+            if (!savedStart || currentQuestion === 1) {
+                gameStartTimestamp = Date.now();
+                localStorage.setItem('gameStartTime', String(gameStartTimestamp));
+            } else {
+                gameStartTimestamp = parseInt(savedStart);
+            }
+            
+            updateRealTimerDisplay();
+            realTimerInterval = setInterval(updateRealTimerDisplay, 1000);
+        }
+
+        function updateRealTimerDisplay() {
+            if (!gameStartTimestamp) return;
+            const elapsedSecs = Math.max(0, Math.floor((Date.now() - gameStartTimestamp) / 1000));
+            const mins = Math.floor(elapsedSecs / 60);
+            const secs = elapsedSecs % 60;
+            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            
+            const realTimerEl = document.getElementById('realTimer');
+            if (realTimerEl) {
+                realTimerEl.textContent = formatted;
+            }
+        }
+
+        function startReadingPhase() {
+            console.log('📖 Starting reading phase...');
+            isReadingPhase = true;
+            timeRemaining = READING_TIME;
+            
+            startRealGameTimer();
+            
+            // Show question screen, hide others
+            document.getElementById('questionScreen').classList.add('active');
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('resultScreen').classList.remove('active');
+            
+            // HIDE controls on question screen
+            document.getElementById('gameControls').style.display = 'none';
+            
+            // Load question
+            loadQuestion();
+            
+            // Start countdown
+            startPhaseTimer(READING_TIME, () => {
+                console.log('⏱️ Reading time ended, starting snake game...');
+                startGamePhase();
+            });
+        }
+
+        async function loadQuestion() {
+            try {
+                const selectedLanguage = localStorage.getItem('selectedLanguage') || 'python';
+                
+                console.log(`📥 Loading question ${currentQuestion}, language: ${selectedLanguage}`);
+                
+                let data;
+                try {
+                    data = await Game.getQuestion(currentQuestion, selectedLanguage);
+                } catch (err) {
+                    console.warn('Initial getQuestion call failed, attempting session refresh:', err);
+                    await Game.startGame();
+                    data = await Game.getQuestion(currentQuestion, selectedLanguage);
+                }
+
+                console.log('API Response:', data);
+                
+                if (!data || !data.success || !data.data || !data.data.question) {
+                    throw new Error((data && data.error) || 'Invalid question response structure');
+                }
+                
+                const question = data.data.question;
+                currentGameData = question;
+                window.currentGameData = question;
+                
+                // Display question text and options in reading phase
+                const qText = question.text || 'No question text';
+                document.getElementById('questionText').textContent = qText;
+                
+                const optA = question.options?.A || '-';
+                const optB = question.options?.B || '-';
+                const optC = question.options?.C || '-';
+                const optD = question.options?.D || '-';
+
+                document.getElementById('optAText').textContent = optA;
+                document.getElementById('optBText').textContent = optB;
+                document.getElementById('optCText').textContent = optC;
+                document.getElementById('optDText').textContent = optD;
+                
+                document.getElementById('questionNum').textContent = `${currentQuestion}/20`;
+                
+                console.log('✓ Question loaded successfully');
+                
+            } catch (error) {
+                console.error('❌ Error loading question:', error);
+                document.getElementById('questionText').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function startPhaseTimer(duration, onComplete) {
+            // Clear any existing timer
+            if (phaseTimer) clearInterval(phaseTimer);
+            
+            timeRemaining = duration;
+            
+            // Update display immediately
+            updateTimerDisplay();
+            
+            // Start countdown
+            phaseTimer = setInterval(() => {
+                timeRemaining--;
+                updateTimerDisplay();
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(phaseTimer);
+                    phaseTimer = null;
+                    if (onComplete) onComplete();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            document.getElementById('timer').textContent = timeRemaining + 's';
+            document.getElementById('autoRedirectCount').textContent = timeRemaining;
+        }
+
+        function skipToGame() {
+            console.log('⏭️ User clicked NEXT, skipping to snake game...');
+            if (phaseTimer) clearInterval(phaseTimer);
+            startGamePhase();
+        }
+
+        function startGamePhase() {
+            console.log('%c🎮 Starting snake game phase...', 'color: cyan; font-size: 14px; font-weight: bold');
+            isReadingPhase = false;
+            
+            // Hide question, show game
+            document.getElementById('questionScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            document.getElementById('resultScreen').classList.remove('active');
+            
+            // SHOW controls on game screen
+            document.getElementById('gameControls').style.display = 'flex';
+            
+            // Ensure canvas is visible and accessible
+            const canvas = document.getElementById('gameCanvas');
+            if (!canvas) {
+                console.error('❌ Canvas element not found!');
+                return;
+            }
+            console.log('✅ Canvas found:', canvas.width, 'x', canvas.height);
+            
+            // Initialize snake game
+            console.log('Calling initSnakeGame()...');
+            setTimeout(() => {
+                if (typeof window.initSnakeGame === 'function') {
+                    try {
+                        window.initSnakeGame();
+                        console.log('✅ Snake game initialized successfully');
+                    } catch (error) {
+                        console.error('❌ Error initializing snake game:', error);
+                    }
+                } else {
+                    console.error('❌ initSnakeGame function not found!');
+                    console.log('Available functions:', Object.keys(window).filter(k => k.includes('game') || k.includes('snake')));
+                }
+            }, 100);
+            
+            // Start game timer (20 seconds)
+            startPhaseTimer(GAME_TIME, () => {
+                console.log('⏱️ Game time ended, showing result...');
+                endSnakeGame();
+            });
+        }
+
+        function initializeSnakeGame() {
+            console.log('🎮 Initializing snake game...');
+            
+            try {
+                window.initializeSnakeGame();
+                console.log('✓ Snake game initialized');
+            } catch (error) {
+                console.error('Error initializing snake game:', error);
+            }
+        }
+
+        function endSnakeGame() {
+            console.log('🏁 Snake game ended');
+            
+            // Clear timer
+            if (phaseTimer) clearInterval(phaseTimer);
+            
+            // Show result (no answer selected)
+            showResult(false, 0);
+        }
+
+        function moveSnake(direction) {
+            if (typeof window.moveSnakeByButton === 'function') {
+                window.moveSnakeByButton(direction);
+            } else if (typeof window.moveSnake === 'function' && window.moveSnake !== moveSnake) {
+                window.moveSnake(direction);
+            }
+        }
+
+        async function nextQuestion() {
+            currentQuestion++;
+            
+            if (currentQuestion > 20) {
+                console.log('🎉 Game completed!');
+                if (realTimerInterval) clearInterval(realTimerInterval);
+                const startTime = parseInt(localStorage.getItem('gameStartTime') || Date.now());
+                const totalSecs = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+                const mins = Math.floor(totalSecs / 60);
+                const secs = Math.floor(totalSecs % 60);
+                const formattedTime = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                
+                localStorage.setItem('lastGameTotalTime', formattedTime);
+                localStorage.setItem('lastGameTotalSeconds', String(totalSecs));
+                console.log(`⏱️ Total real game completion time: ${formattedTime} (${totalSecs}s)`);
+
+                try {
+                    const res = await Game.completeGame(totalSecs);
+                    if (res && res.user) {
+                        localStorage.setItem('playerGameSummary', JSON.stringify(res.user));
+                    }
+                } catch (e) {
+                    console.error('Complete game error:', e);
+                }
+                window.location.href = 'summary.html';
+            } else {
+                console.log(`📖 Moving to question ${currentQuestion}...`);
+                
+                // Clear timer
+                if (phaseTimer) clearInterval(phaseTimer);
+                
+                // Start next reading phase
+                startReadingPhase();
+            }
+        }
+
+        function showResult(isCorrect, points) {
+            console.log(`Result: ${isCorrect ? '✓ CORRECT' : '✗ WRONG'} (${points} points)`);
+            
+            // Hide other screens
+            document.getElementById('questionScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('resultScreen').classList.add('active');
+            
+            // Show result
+            const messageEl = document.getElementById('resultMessage');
+            const pointsEl = document.getElementById('resultPoints');
+            
+            if (isCorrect) {
+                messageEl.textContent = '✓ CORRECT!';
+                messageEl.style.color = '#34d399';
+                pointsEl.textContent = `+${points} Points`;
+            } else {
+                messageEl.textContent = '✗ WRONG';
+                messageEl.style.color = '#ef4444';
+                pointsEl.textContent = '+0 Points';
+            }
+        }
+    </script>
+</body>
+</html>

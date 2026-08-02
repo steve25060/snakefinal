@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Test - Snake MCQ</title>
+  <link rel="stylesheet" href="css/style.css?v=2.0">
+</head>
+<body class="login-page">
+  <div class="login-container">
+    <div class="login-box">
+      <div class="login-header">
+        <h1>🐍 Snake MCQ Challenge</h1>
+        <p>Test Login Form</p>
+      </div>
+
+      <div id="testForm">
+        <h2>Quick Test</h2>
+        <form onsubmit="testLogin(event)">
+          <div class="form-group">
+            <label for="playerName">Your Name</label>
+            <input 
+              type="text" 
+              id="playerName" 
+              value="Test User"
+              placeholder="Enter your full name" 
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label for="rollNumber">Roll Number / ID</label>
+            <input 
+              type="text" 
+              id="rollNumber" 
+              value="TEST123"
+              placeholder="Enter your roll number or ID" 
+              required
+            >
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block">Test Registration</button>
+        </form>
+
+        <div id="errorMessage" class="error-message" style="margin-top: 1rem;"></div>
+        <div id="successMessage" class="success-message" style="margin-top: 1rem;"></div>
+        <div id="responseData" style="margin-top: 2rem; padding: 1rem; background: #334155; border-radius: 0.5rem; display: none;">
+          <h3>Response Data:</h3>
+          <pre id="jsonOutput"></pre>
+        </div>
+      </div>
+
+      <div class="login-footer" style="margin-top: 2rem;">
+        <p><a href="index.html">← Back to Home</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/api.js?v=2.0"></script>
+  <script>
+    async function testLogin(event) {
+      event.preventDefault();
+
+      const playerName = document.getElementById('playerName').value.trim();
+      const rollNumber = document.getElementById('rollNumber').value.trim();
+      const errorDiv = document.getElementById('errorMessage');
+      const successDiv = document.getElementById('successMessage');
+      const responseDiv = document.getElementById('responseData');
+      const jsonOutput = document.getElementById('jsonOutput');
+
+      errorDiv.textContent = '';
+      successDiv.textContent = '';
+      responseDiv.style.display = 'none';
+
+      try {
+        console.log('Attempting registration with:', { playerName, rollNumber });
+        
+        const response = await apiCall('/api/auth/register', 'POST', {
+          name: playerName,
+          rollNumber: rollNumber,
+        });
+
+        console.log('Registration response:', response);
+
+        if (response.success) {
+          successDiv.innerHTML = `
+            ✓ Registration successful!<br>
+            User ID: ${response.userId}<br>
+            Session ID: ${response.sessionId}
+          `;
+
+          // Show response data
+          responseDiv.style.display = 'block';
+          jsonOutput.textContent = JSON.stringify(response, null, 2);
+
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            window.location.href = 'game.html';
+          }, 3000);
+        } else {
+          throw new Error(response.error || 'Registration failed');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        errorDiv.innerHTML = `
+          ❌ Error: ${error.message}<br>
+          <small>Check browser console for details</small>
+        `;
+        responseDiv.style.display = 'block';
+        jsonOutput.textContent = error.message;
+      }
+    }
+  </script>
+</body>
+</html>

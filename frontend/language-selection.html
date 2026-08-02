@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Language - Snake MCQ Challenge</title>
+    <link rel="stylesheet" href="css/style.css?v=6.0">
+    <link rel="stylesheet" href="css/responsive.css?v=6.0">
+    <style>
+        .language-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .language-selection-box {
+            background: rgba(15, 23, 42, 0.88);
+            border: 2px solid var(--border-color);
+            border-radius: 24px;
+            padding: 50px 40px;
+            max-width: 620px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(139, 92, 246, 0.25);
+            backdrop-filter: blur(16px);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .language-selection-box h1 {
+            text-align: center;
+            color: #fff;
+            margin-bottom: 10px;
+            font-family: var(--font-heading);
+            font-size: 2.2rem;
+            font-weight: 800;
+        }
+
+        .language-selection-box p {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 35px;
+            font-size: 1.05rem;
+        }
+
+        .language-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .language-btn {
+            padding: 35px 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 16px;
+            background: rgba(6, 8, 20, 0.6);
+            color: #fff;
+            cursor: pointer;
+            font-family: var(--font-heading);
+            font-size: 1.35rem;
+            font-weight: 700;
+            transition: var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .language-btn:hover {
+            background: rgba(139, 92, 246, 0.15);
+            border-color: #8b5cf6;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.3);
+        }
+
+        .language-btn.selected {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(6, 182, 212, 0.3));
+            border-color: #38bdf8;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.45);
+        }
+
+        .language-icon {
+            font-size: 3.5rem;
+            filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #7c3aed 0%, #3b82f6 50%, #06b6d4 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: var(--font-heading);
+            font-size: 1.15rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+        }
+
+        .start-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(124, 58, 237, 0.6);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .player-info {
+            text-align: center;
+            margin-bottom: 25px;
+            padding: 16px 20px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.25);
+            border-radius: 12px;
+        }
+
+        .player-name {
+            color: #38bdf8;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 600px) {
+            .language-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .language-selection-box {
+                padding: 35px 20px;
+            }
+
+            .language-btn {
+                padding: 25px 15px;
+            }
+
+            .language-icon {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="moon"></div>
+
+    <div class="language-container">
+        <div class="language-selection-box">
+            <h1>🐍 Choose Language</h1>
+            <p>Select which programming language you want to test your skills in</p>
+
+            <div class="player-info">
+                <p style="margin: 0; color: var(--text-secondary);">Player: <span class="player-name" id="playerName">-</span></p>
+            </div>
+
+            <div class="language-buttons">
+                <button class="language-btn" onclick="selectLanguage('python', this)">
+                    <span class="language-icon">🐍</span>
+                    <span>Python</span>
+                </button>
+                <button class="language-btn" onclick="selectLanguage('c', this)">
+                    <span class="language-icon">⚡</span>
+                    <span>C Language</span>
+                </button>
+            </div>
+
+            <button class="start-btn" id="startBtn" onclick="startGame()" disabled>
+                <span id="startBtnText">🎮 START GAME</span>
+                <span id="loadingSpinner" class="hidden"> <span class="loading"></span></span>
+            </button>
+
+            <div style="margin-top: 25px; text-align: center;">
+                <a href="index.html" class="nav-link">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=6.0"></script>
+    <script>
+        let selectedLanguage = null;
+
+        // Check login on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            requireLogin();
+            
+            // Display player name
+            const playerName = localStorage.getItem(STORAGE_KEYS.USER_NAME);
+            if (playerName) {
+                document.getElementById('playerName').textContent = playerName;
+            }
+        });
+
+        function selectLanguage(language, element) {
+            selectedLanguage = language;
+            
+            // Update UI
+            document.querySelectorAll('.language-btn').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            
+            let btn = element;
+            if (!btn && typeof event !== 'undefined' && event && event.target) {
+                btn = event.target.closest('.language-btn');
+            }
+            if (btn) {
+                btn.classList.add('selected');
+            }
+            
+            // Enable start button
+            const startBtn = document.getElementById('startBtn');
+            if (startBtn) startBtn.disabled = false;
+        }
+
+        async function startGame() {
+            if (!selectedLanguage) {
+                alert('Please select a language first');
+                return;
+            }
+
+            const startBtn = document.getElementById('startBtn');
+            const startBtnText = document.getElementById('startBtnText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            try {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else if (document.documentElement.webkitRequestFullscreen) {
+                    document.documentElement.webkitRequestFullscreen();
+                }
+
+                startBtn.disabled = true;
+                startBtnText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+
+                // Store selected language in localStorage
+                localStorage.setItem('selectedLanguage', selectedLanguage);
+
+                // Start game
+                const response = await Game.startGame();
+
+                if (response.success) {
+                    // Store session tokens
+                    localStorage.setItem(STORAGE_KEYS.SESSION_TOKEN, response.data.sessionToken);
+                    localStorage.setItem(STORAGE_KEYS.SESSION_ID, response.data.sessionId);
+
+                    console.log('Game started with language:', selectedLanguage);
+                    
+                    // Redirect to game
+                    setTimeout(() => {
+                        window.location.href = 'game.html';
+                    }, 500);
+                } else {
+                    alert('Failed to start game. Please try again.');
+                    startBtn.disabled = false;
+                    startBtnText.classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error starting game:', error);
+                alert('An error occurred. Please try again.');
+                startBtn.disabled = false;
+                startBtnText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

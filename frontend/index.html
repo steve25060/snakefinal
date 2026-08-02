@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake MCQ Challenge - Play Learn Compete</title>
+    <link rel="stylesheet" href="css/style.css?v=7.0">
+    <link rel="stylesheet" href="css/responsive.css?v=7.0">
+</head>
+<body>
+    <!-- Animated Background & Stars -->
+    <div class="stars"></div>
+    <div class="moon"></div>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <span class="logo-icon"></span>
+                <span class="logo-text">SNAKE MCQ</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home" class="nav-link">Home</a>
+                <a href="#how-to-play" class="nav-link">How to Play</a>
+                <a href="#rules" class="nav-link">Rules</a>
+                <a href="login.html" class="nav-link btn-primary">Login / Play</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <h1 class="hero-title">
+                    <span class="text-gradient">SNAKE MCQ</span>
+                    <span class="text-gradient-alt">CHALLENGE</span>
+                </h1>
+                <p class="hero-subtitle">PLAY • LEARN • COMPETE • WIN</p>
+                <p class="hero-description">
+                    Test your Python & C programming knowledge while competing in an exciting Snake Challenge.<br>
+                </p>
+                <!-- Hero Buttons in the same line -->
+                <div class="hero-buttons">
+                    <a href="login.html" class="btn btn-primary">🎮 PLAY NOW</a>
+                    <a href="#how-to-play" class="btn btn-secondary">📚 HOW TO PLAY</a>
+                    <a href="#rules" class="btn btn-secondary">📋 RULES</a>
+                </div>
+            </div>
+            <div class="hero-animation">
+                <div class="snake-graphic">
+                    <!-- Smooth Real-Time Canvas Cyber Serpent Animation -->
+                    <canvas id="heroSnakeCanvas" width="340" height="340"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How to Play Section -->
+    <section id="how-to-play" class="how-to-play">
+        <div class="container">
+            <h2 class="section-title"><span>How to Play</span></h2>
+            <div class="steps-container">
+                <div class="step-card">
+                    <div class="step-number">1</div>
+                    <h3>Read the Question</h3>
+                    <p>You have 20 seconds to read and understand the MCQ question carefully.</p>
+                    <div class="step-icon">📖</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">2</div>
+                    <h3>Click NEXT / START GAME</h3>
+                    <p>After reading, click the button to start the Snake game round.</p>
+                    <div class="step-icon">⏱️</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">3</div>
+                    <h3>Control the Snake</h3>
+                    <p>Four answer options (A, B, C, D) are placed inside the game board at random positions.</p>
+                    <div class="step-icon">🐍</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">4</div>
+                    <h3>Eat the Correct Option</h3>
+                    <p>Move the snake to eat/touch the option you believe is correct.</p>
+                    <div class="step-icon">✨</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">5</div>
+                    <h3>Get Instant Result</h3>
+                    <p>Correct answer gives points! Snake grows bigger and faster for next question.</p>
+                    <div class="step-icon">⭐</div>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">6</div>
+                    <h3>Complete All 20 Questions</h3>
+                    <p>Difficulty increases with each question. See your final score on the leaderboard!</p>
+                    <div class="step-icon">🏆</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Rules Section -->
+    <section id="rules" class="rules">
+        <div class="container">
+            <h2 class="section-title"><span>Rules & Features</span></h2>
+            <div class="rules-grid">
+                <div class="rule-card">
+                    <h3>🎯 Total Questions</h3>
+                    <p>20 MCQ Questions total from Python and C programming</p>
+                </div>
+                <div class="rule-card">
+                    <h3>⏱️ Reading Time</h3>
+                    <p>20 seconds to read and understand each question</p>
+                </div>
+                <div class="rule-card">
+                    <h3>🐍 Snake Game</h3>
+                    <p>30 seconds time limit in snake game</p>
+                </div>
+                <div class="rule-card">
+                    <h3>📍 4 Options Inside Box</h3>
+                    <p>All four answer options (A, B, C, D) appear at random positions inside the game board</p>
+                </div>
+                <div class="rule-card">
+                    <h3>✅ Correct Answer</h3>
+                    <p>+100 points + Bonus points for reading time remaining</p>
+                </div>
+                <div class="rule-card">
+                    <h3>❌ Wrong Answer</h3>
+                    <p>0 points - No penalty, move to next question</p>
+                </div>
+                <div class="rule-card">
+                    <h3>📈 Progressive Difficulty</h3>
+                    <p>Snake size ↑ | Speed ↑ | after each correct answer</p>
+                </div>
+                <div class="rule-card">
+                    <h3>🎮 Border Collision</h3>
+                    <p>If snake touches border without eating an option, move to next question</p>
+                </div>
+                <div class="rule-card">
+                    <h3>🏅 Leaderboard</h3>
+                    <p>Top 10/20/30/50 players ranked by score</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>🐍 Snake MCQ Challenge • Test Your Skills, Compete & Win</p>
+            <p style="font-size: 0.85rem; opacity: 0.7;">© 2026 Snake MCQ Challenge. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/api.js?v=7.0"></script>
+    <script src="js/hero-snake.js?v=8.0"></script>
+</body>
+</html>

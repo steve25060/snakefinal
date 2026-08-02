@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Snake MCQ Challenge</title>
+    <link rel="stylesheet" href="css/style.css?v=6.0">
+    <link rel="stylesheet" href="css/responsive.css?v=6.0">
+</head>
+<body>
+    <div class="stars"></div>
+    <div class="moon"></div>
+
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 25px 20px; position: relative; z-index: 10;">
+        <div class="form-container">
+            <div style="text-align: center; margin-bottom: 32px;">
+                <div style="font-size: 3.5rem; margin-bottom: 8px; display: inline-block; filter: drop-shadow(0 0 18px #facc15); animation: floatIcon 3s ease-in-out infinite;">🐍</div>
+                <h1 style="font-family: var(--font-heading); font-size: 2.6rem; font-weight: 900; background: linear-gradient(135deg, #a78bfa 0%, #38bdf8 50%, #f43f5e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; letter-spacing: -0.5px;">
+                    SNAKE MCQ
+                </h1>
+                <p style="font-family: var(--font-display); color: #38bdf8; font-size: 0.82rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">
+                    ENTER CREDENTIALS TO PLAY
+                </p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="name" class="form-label">
+                        <span>👤</span> PLAYER NAME
+                    </label>
+                    <input 
+                        type="text" 
+                        id="name" 
+                        class="form-input" 
+                        placeholder="Enter your full name"
+                        required
+                    />
+                    <div id="nameError" class="form-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="class" class="form-label">
+                        <span>🎓</span> CLASS / DIVISION
+                    </label>
+                    <select id="class" class="form-input" required>
+                        <option value="" disabled selected>-- Select Your Class --</option>
+                        <option value="SYCS">SYCS (Computer Science)</option>
+                        <option value="SYIT">SYIT (Information Tech)</option>
+                        <option value="SYAI">SYAI (Artificial Intelligence)</option>
+                        <option value="SYDS">SYDS (Data Science)</option>
+                    </select>
+                    <div id="classError" class="form-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="rollNumber" class="form-label">
+                        <span>🆔</span> ROLL NUMBER / ID
+                    </label>
+                    <input 
+                        type="text" 
+                        id="rollNumber" 
+                        class="form-input" 
+                        placeholder="e.g. 101 or CS-24"
+                        required
+                    />
+                    <div id="rollError" class="form-error"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 20px; padding: 16px; font-size: 1.1rem; font-weight: 800; letter-spacing: 1px;">
+                    <span id="submitText">🚀 START CHALLENGE</span>
+                    <span id="loadingSpinner" class="hidden"> <span class="loading"></span> Connecting...</span>
+                </button>
+
+                <div id="formError" class="form-error" style="text-align: center; margin-top: 18px;"></div>
+            </form>
+
+            <div style="margin-top: 28px; text-align: center;">
+                <a href="index.html" class="nav-link" style="font-weight: 600; color: #a78bfa;">← Return to Home Page</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js?v=6.0"></script>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const classVal = document.getElementById('class').value.trim();
+            const rollNumber = document.getElementById('rollNumber').value.trim();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const submitText = document.getElementById('submitText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const formError = document.getElementById('formError');
+
+            // Validation
+            if (!name || name.length < 1) {
+                document.getElementById('nameError').textContent = 'Name is required';
+                return;
+            }
+
+            if (!classVal || classVal.length < 1) {
+                document.getElementById('classError').textContent = 'Class is required';
+                return;
+            }
+
+            if (!rollNumber || rollNumber.length < 1) {
+                document.getElementById('rollError').textContent = 'Valid roll number required';
+                return;
+            }
+
+            // Clear errors
+            document.getElementById('nameError').textContent = '';
+            document.getElementById('classError').textContent = '';
+            document.getElementById('rollError').textContent = '';
+            formError.textContent = '';
+
+            try {
+                // Disable button and show loading
+                submitBtn.disabled = true;
+                submitText.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+
+                console.log('📝 Submitting form with:', { name, class: classVal, rollNumber });
+
+                // Attempt login/register
+                const response = await Auth.loginPlayer(name, classVal, rollNumber);
+
+                if (response.success) {
+                    console.log('✅ Login successful:', response.data);
+                    
+                    // Auth.loginPlayer already stores everything, just redirect
+                    console.log('🔄 Redirecting to language selection...');
+                    
+                    // Redirect to language selection
+                    setTimeout(() => {
+                        window.location.href = 'language-selection.html';
+                    }, 500);
+                } else {
+                    formError.textContent = response.error || 'Login failed. Please try again.';
+                    submitBtn.disabled = false;
+                    submitText.classList.remove('hidden');
+                    loadingSpinner.classList.add('hidden');
+                    console.error('Login failed:', response);
+                }
+            } catch (error) {
+                formError.textContent = error.message || 'An error occurred. Please try again.';
+                submitBtn.disabled = false;
+                submitText.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                console.error('❌ Login error:', error);
+            }
+        });
+
+        // Auto-focus on first field
+        document.getElementById('name').focus();
+    </script>
+</body>
+</html>
