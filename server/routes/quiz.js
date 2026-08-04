@@ -480,15 +480,20 @@ router.post('/complete', async (req, res) => {
       });
     }
 
-    // Calculate real elapsed time in seconds
+    // Calculate 100% accurate server-verified elapsed time in seconds
     const durationRow = await db.getOne(
       `SELECT CAST(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at)) AS INTEGER) as secs
        FROM game_sessions WHERE id = $1`,
       [session.id]
     );
 
+    const serverSecs = durationRow ? parseInt(durationRow.secs) : null;
     const reqSecs = req.body ? parseInt(req.body.totalTimeSeconds) : null;
-    const finalSeconds = (!isNaN(reqSecs) && reqSecs > 0) ? reqSecs : (durationRow ? Math.max(1, durationRow.secs || 1) : 1);
+    
+    // Server-verified database duration is authoritative, with fallback to reqSecs
+    const finalSeconds = (serverSecs && !isNaN(serverSecs) && serverSecs > 0)
+      ? serverSecs
+      : ((reqSecs && !isNaN(reqSecs) && reqSecs > 0) ? reqSecs : 1);
     
     const mins = Math.floor(finalSeconds / 60);
     const secs = Math.floor(finalSeconds % 60);
