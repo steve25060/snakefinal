@@ -165,22 +165,42 @@
         }
 
         function setupFullscreenEnforcement() {
-            if (isMobileDevice()) {
-                console.log('📱 Mobile device detected: Bypassing desktop fullscreen anti-cheat for mobile compatibility');
-                return;
-            }
-
-            // Auto request fullscreen on any page click if not in fullscreen
-            document.addEventListener('click', () => {
+            // Auto request fullscreen on user tap or click
+            const triggerFs = () => {
                 if (!isFullscreenActive() && !isGameTerminated) {
                     requestFullscreenMode();
                 }
+            };
+            document.addEventListener('click', triggerFs);
+            document.addEventListener('touchstart', triggerFs, { passive: true });
+
+            // 1. Intercept Mobile Back Button / History Navigation
+            try {
+                history.pushState({ page: 'game' }, '', window.location.href);
+                window.addEventListener('popstate', (e) => {
+                    if (isGameTerminated) return;
+                    history.pushState({ page: 'game' }, '', window.location.href);
+                    handleFullscreenViolation('Pressed Mobile Back Button / Navigation');
+                });
+            } catch (err) {}
+
+            // 2. Intercept App Switching / Home Button / Tab Hiding
+            document.addEventListener('visibilitychange', () => {
+                if (isGameTerminated) return;
+                if (document.hidden || document.visibilityState === 'hidden') {
+                    handleFullscreenViolation('Switched Mobile App or Browser Tab');
+                }
             });
 
-            // Listen for Fullscreen Exit
+            window.addEventListener('blur', () => {
+                if (isGameTerminated) return;
+                handleFullscreenViolation('Left Game Screen / Tab');
+            });
+
+            // 3. Listen for Fullscreen Exit (Desktop)
             const handleFullscreenExit = () => {
                 if (isGameTerminated) return;
-                if (!isFullscreenActive()) {
+                if (!isFullscreenActive() && !isMobileDevice()) {
                     handleFullscreenViolation('Exited Fullscreen Mode');
                 }
             };
@@ -189,7 +209,7 @@
             document.addEventListener('webkitfullscreenchange', handleFullscreenExit);
             document.addEventListener('msfullscreenchange', handleFullscreenExit);
 
-            // Listen for ESC or F11 keypress
+            // 4. Listen for ESC or F11 keypress
             document.addEventListener('keydown', (e) => {
                 if (isGameTerminated) return;
                 if (e.key === 'Escape' || e.key === 'F11') {

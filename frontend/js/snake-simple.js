@@ -81,9 +81,10 @@ function initGame() {
     startLoop();
     console.log('8. Game loop started ✅');
     
-    // 9. Enable keyboard controls
+    // 9. Enable keyboard & touch swipe controls
     enableKeyboard();
-    console.log('9. Keyboard controls enabled ✅');
+    enableTouchSwipeControls();
+    console.log('9. Keyboard & touch swipe controls enabled ✅');
     
     console.log('%c========== GAME INIT COMPLETE ==========', 'color: lime; font-size: 12px; font-weight: bold');
     return true;
@@ -523,6 +524,74 @@ function moveSnakeByButton(dir) {
         if (direction.x === 0) {
             nextDirection = { x: 1, y: 0 };
             console.log('➡️ RIGHT MOVE');
+        }
+    }
+}
+
+// Mobile Touch Swipe Gesture Controls
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+let touchListenersInitialized = false;
+
+function enableTouchSwipeControls() {
+    if (touchListenersInitialized) return;
+
+    const targets = [
+        document.getElementById('gameCanvas'),
+        document.getElementById('gameScreen'),
+        document.querySelector('.game-container')
+    ].filter(Boolean);
+
+    targets.forEach(target => {
+        target.addEventListener('touchstart', (e) => {
+            if (e.touches && e.touches[0]) {
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        target.addEventListener('touchmove', (e) => {
+            if (gameActive && document.getElementById('gameScreen')?.classList.contains('active')) {
+                if (e.cancelable) e.preventDefault();
+            }
+        }, { passive: false });
+
+        target.addEventListener('touchend', (e) => {
+            if (!gameActive) return;
+            if (e.changedTouches && e.changedTouches[0]) {
+                touchEndX = e.changedTouches[0].clientX;
+                touchEndY = e.changedTouches[0].clientY;
+                handleTouchSwipe();
+            }
+        }, { passive: true });
+    });
+
+    touchListenersInitialized = true;
+    console.log('📱 Touch swipe gesture controls initialized ✅');
+}
+
+function handleTouchSwipe() {
+    const dx = touchEndX - touchStartX;
+    const dy = touchEndY - touchStartY;
+    const minSwipeDistance = 20;
+
+    if (Math.abs(dx) < minSwipeDistance && Math.abs(dy) < minSwipeDistance) {
+        return;
+    }
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0) {
+            moveSnakeByButton('RIGHT');
+        } else {
+            moveSnakeByButton('LEFT');
+        }
+    } else {
+        if (dy > 0) {
+            moveSnakeByButton('DOWN');
+        } else {
+            moveSnakeByButton('UP');
         }
     }
 }
