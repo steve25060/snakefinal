@@ -666,10 +666,9 @@ Started At: ${p.started_at ? new Date(p.started_at).toLocaleString() : '-'}`);
     // WebSocket setup for admin
     function setupAdminWebSocket() {
       try {
-        // Determine Socket.IO URL
-        const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-          ? `http://localhost:3000`
-          : window.location.origin;
+        const socketUrl = (typeof window !== 'undefined' && window.location && window.location.origin && !window.location.origin.includes('file://'))
+          ? window.location.origin
+          : 'https://snakemcq.onrender.com';
 
         console.log('🔌 Connecting to Socket.IO at:', socketUrl);
         

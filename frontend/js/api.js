@@ -5,7 +5,7 @@ const getApiBase = () => {
     if (typeof window !== 'undefined' && window.location && window.location.origin && !window.location.origin.includes('file://')) {
         return `${window.location.origin}/api`;
     }
-    return 'http://localhost:3000/api';
+    return 'https://snakemcq.onrender.com/api';
 };
 
 const API_BASE = getApiBase();
@@ -314,7 +314,7 @@ async function apiCall(endpoint, method = 'GET', body = null, headers = {}) {
         }
         const origin = (typeof window !== 'undefined' && window.location && window.location.origin && !window.location.origin.includes('file://'))
             ? window.location.origin
-            : 'http://localhost:3000';
+            : 'https://snakemcq.onrender.com';
         url = `${origin}${url}`;
     }
 
