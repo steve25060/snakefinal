@@ -322,11 +322,28 @@ router.post('/answer', async (req, res) => {
       [newScore, newCorrect, newWrong, session.user_id]
     );
 
-    // Broadcast real-time score update via WebSockets
+    // Broadcast real-time score & leaderboard update via WebSockets
     try {
       const io = req.app.get('io');
       if (io) {
         io.emit('score-updated', { userId: session.user_id, newScore });
+        
+        const topPlayers = await db.getAll(
+          `SELECT 
+            id, name, class, roll_number, score, correct_answers, wrong_answers, 
+            skipped_answers, total_time_seconds, completed_at, game_status
+           FROM users 
+           ORDER BY score DESC, completed_at ASC LIMIT 100`
+        );
+        
+        const leaderboardData = topPlayers.map((player, index) => ({
+          ...player,
+          rollNumber: player.roll_number,
+          rank: index + 1,
+          medal: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : ''
+        }));
+        
+        io.emit('leaderboard-updated', leaderboardData);
       }
     } catch (ignored) {}
 

@@ -161,7 +161,9 @@
         }
 
         function isMobileDevice() {
-            return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.innerWidth <= 768);
+            const userAgentMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const touchScreen = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            return userAgentMobile || (touchScreen && window.innerWidth <= 1024);
         }
 
         function setupFullscreenEnforcement() {
@@ -184,7 +186,7 @@
                 });
             } catch (err) {}
 
-            // 2. Intercept App Switching / Home Button / Tab Hiding
+            // 2. Intercept App Switching / Home Button / Tab Hiding (only if tab actually becomes hidden)
             document.addEventListener('visibilitychange', () => {
                 if (isGameTerminated) return;
                 if (document.hidden || document.visibilityState === 'hidden') {
@@ -192,15 +194,11 @@
                 }
             });
 
-            window.addEventListener('blur', () => {
-                if (isGameTerminated) return;
-                handleFullscreenViolation('Left Game Screen / Tab');
-            });
-
-            // 3. Listen for Fullscreen Exit (Desktop)
+            // 3. Listen for Fullscreen Exit (Desktop Only)
             const handleFullscreenExit = () => {
                 if (isGameTerminated) return;
-                if (!isFullscreenActive() && !isMobileDevice()) {
+                if (isMobileDevice()) return; // Ignore mobile address bar collapse / rotation events
+                if (!isFullscreenActive()) {
                     handleFullscreenViolation('Exited Fullscreen Mode');
                 }
             };
