@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../db');
+const db = require('../db-postgresql');
 
 const router = express.Router();
 
@@ -10,11 +10,11 @@ const router = express.Router();
 router.get('/questions', async (req, res) => {
   try {
     const { language } = req.query;
-    let query = 'SELECT * FROM questions WHERE is_active = 1';
+    let query = 'SELECT * FROM questions WHERE is_active = true';
     const params = [];
 
     if (language) {
-      query += ' AND LOWER(language) = ?';
+      query += ' AND LOWER(language) = $1';
       params.push(language.toLowerCase());
     }
 
@@ -52,30 +52,30 @@ router.post('/start', async (req, res) => {
     }
 
     let session = await db.getOne(
-      "SELECT id, user_id FROM game_sessions WHERE session_token = ?",
+      "SELECT id, user_id FROM game_sessions WHERE session_token = $1",
       [sessionToken]
     );
 
     if (session) {
       await db.update(
-        "UPDATE game_sessions SET game_status = 'active', started_at = datetime('now') WHERE id = ?",
+        "UPDATE game_sessions SET game_status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = $1",
         [session.id]
       );
     } else {
-      const user = await db.getOne('SELECT id FROM users WHERE session_token = ?', [sessionToken]);
+      const user = await db.getOne('SELECT id FROM users WHERE session_token = $1', [sessionToken]);
       if (user) {
         const newSession = await db.insert(
-          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES (?, ?, 'active', datetime('now'))",
+          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES ($1, $2, 'active', CURRENT_TIMESTAMP)",
           [user.id, sessionToken]
         );
         session = { id: newSession.id, user_id: user.id };
       } else {
         const newUser = await db.insert(
-          "INSERT INTO users (name, roll_number, session_token, game_status) VALUES ('Player', 'GUEST', ?, 'playing')",
+          "INSERT INTO users (name, roll_number, session_token, game_status) VALUES ('Player', 'GUEST', $1, 'playing')",
           [sessionToken]
         );
         const newSession = await db.insert(
-          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES (?, ?, 'active', datetime('now'))",
+          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES ($1, $2, 'active', CURRENT_TIMESTAMP)",
           [newUser.id, sessionToken]
         );
         session = { id: newSession.id, user_id: newUser.id };
@@ -118,30 +118,30 @@ router.get('/question/:questionNumber', async (req, res) => {
 
     // Verify or auto-create/reactivate session
     let session = await db.getOne(
-      'SELECT id, user_id FROM game_sessions WHERE session_token = ?',
+      'SELECT id, user_id FROM game_sessions WHERE session_token = $1',
       [sessionToken]
     );
 
     if (session) {
       await db.update(
-        "UPDATE game_sessions SET game_status = 'active' WHERE id = ? AND game_status != 'active'",
+        "UPDATE game_sessions SET game_status = 'active' WHERE id = $1 AND game_status != 'active'",
         [session.id]
       );
     } else {
-      const user = await db.getOne('SELECT id FROM users WHERE session_token = ? ORDER BY id DESC LIMIT 1', [sessionToken]);
+      const user = await db.getOne('SELECT id FROM users WHERE session_token = $1 ORDER BY id DESC LIMIT 1', [sessionToken]);
       if (user) {
         const newSession = await db.insert(
-          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES (?, ?, 'active', datetime('now'))",
+          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES ($1, $2, 'active', CURRENT_TIMESTAMP)",
           [user.id, sessionToken]
         );
         session = { id: newSession.id, user_id: user.id };
       } else {
         const newUser = await db.insert(
-          "INSERT INTO users (name, roll_number, session_token, game_status) VALUES ('Player', 'GUEST', ?, 'playing')",
+          "INSERT INTO users (name, roll_number, session_token, game_status) VALUES ('Player', 'GUEST', $1, 'playing')",
           [sessionToken]
         );
         const newSession = await db.insert(
-          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES (?, ?, 'active', datetime('now'))",
+          "INSERT INTO game_sessions (user_id, session_token, game_status, started_at) VALUES ($1, $2, 'active', CURRENT_TIMESTAMP)",
           [newUser.id, sessionToken]
         );
         session = { id: newSession.id, user_id: newUser.id };
@@ -150,25 +150,27 @@ router.get('/question/:questionNumber', async (req, res) => {
 
     // Get questions already answered in this session
     const answeredQuestions = await db.getAll(
-      'SELECT question_id FROM player_answers WHERE session_id = ?',
+      'SELECT question_id FROM player_answers WHERE session_id = $1',
       [session.id]
     );
 
     const answeredIds = answeredQuestions.map(a => a.question_id);
 
     // Build query to get question
-    let query = 'SELECT * FROM questions WHERE is_active = 1';
+    let query = 'SELECT * FROM questions WHERE is_active = true';
     const params = [];
+    let paramIdx = 1;
 
     // Filter by language if specified
     if (language) {
-      query += ' AND LOWER(language) = ?';
+      query += ` AND LOWER(language) = $${paramIdx++}`;
       params.push(language.toLowerCase());
     }
 
     // Exclude already answered questions in this session if possible
     if (answeredIds.length > 0) {
-      query += ` AND id NOT IN (${answeredIds.map(() => '?').join(',')})`;
+      const placeholders = answeredIds.map(() => `$${paramIdx++}`).join(',');
+      query += ` AND id NOT IN (${placeholders})`;
       params.push(...answeredIds);
     }
 
@@ -179,14 +181,14 @@ router.get('/question/:questionNumber', async (req, res) => {
     // Fallback 1: If all questions for that language were answered, pick any question of that language
     if (!question && language) {
       question = await db.getOne(
-        'SELECT * FROM questions WHERE is_active = 1 AND LOWER(language) = ? ORDER BY RANDOM() LIMIT 1',
+        'SELECT * FROM questions WHERE is_active = true AND LOWER(language) = $1 ORDER BY RANDOM() LIMIT 1',
         [language.toLowerCase()]
       );
     }
 
     // Fallback 2: Pick any active question from the database
     if (!question) {
-      question = await db.getOne('SELECT * FROM questions WHERE is_active = 1 ORDER BY RANDOM() LIMIT 1');
+      question = await db.getOne('SELECT * FROM questions WHERE is_active = true ORDER BY RANDOM() LIMIT 1');
     }
 
     if (!question) {
@@ -251,7 +253,7 @@ router.post('/answer', async (req, res) => {
 
     // Verify session
     const session = await db.getOne(
-      'SELECT * FROM game_sessions WHERE session_token = ? AND game_status = ?',
+      'SELECT * FROM game_sessions WHERE session_token = $1 AND game_status = $2',
       [sessionToken, 'active']
     );
 
@@ -264,7 +266,7 @@ router.post('/answer', async (req, res) => {
 
     // Check if already answered
     const existing = await db.getOne(
-      'SELECT id FROM player_answers WHERE session_id = ? AND question_id = ?',
+      'SELECT id FROM player_answers WHERE session_id = $1 AND question_id = $2',
       [session.id, questionId]
     );
 
@@ -277,7 +279,7 @@ router.post('/answer', async (req, res) => {
 
     // Get question
     const question = await db.getOne(
-      'SELECT correct_option FROM questions WHERE id = ?',
+      'SELECT correct_option FROM questions WHERE id = $1',
       [questionId]
     );
 
@@ -296,10 +298,10 @@ router.post('/answer', async (req, res) => {
       `INSERT INTO player_answers (
         session_id, question_id, question_number, selected_option, 
         correct_option, is_correct, result_type, points_awarded, reading_time_taken
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         session.id, questionId, session.current_question_number, selectedOption,
-        question.correct_option, isCorrect ? 1 : 0, 
+        question.correct_option, isCorrect ? true : false, 
         isCorrect ? 'correct' : 'wrong', pointsAwarded, timeTaken || 0
       ]
     );
@@ -310,13 +312,13 @@ router.post('/answer', async (req, res) => {
     const newWrong = session.wrong_answers + (isCorrect ? 0 : 1);
 
     await db.update(
-      'UPDATE game_sessions SET score = ?, correct_answers = ?, wrong_answers = ? WHERE id = ?',
+      'UPDATE game_sessions SET score = $1, correct_answers = $2, wrong_answers = $3 WHERE id = $4',
       [newScore, newCorrect, newWrong, session.id]
     );
 
     // Update user record
     await db.update(
-      'UPDATE users SET score = ?, correct_answers = ?, wrong_answers = ? WHERE id = ?',
+      'UPDATE users SET score = $1, correct_answers = $2, wrong_answers = $3 WHERE id = $4',
       [newScore, newCorrect, newWrong, session.user_id]
     );
 
@@ -369,7 +371,7 @@ router.post('/skip', async (req, res) => {
     }
 
     const session = await db.getOne(
-      'SELECT * FROM game_sessions WHERE session_token = ? AND game_status = ?',
+      'SELECT * FROM game_sessions WHERE session_token = $1 AND game_status = $2',
       [sessionToken, 'active']
     );
 
@@ -382,7 +384,7 @@ router.post('/skip', async (req, res) => {
 
     // Check if already answered
     const existing = await db.getOne(
-      'SELECT id FROM player_answers WHERE session_id = ? AND question_id = ?',
+      'SELECT id FROM player_answers WHERE session_id = $1 AND question_id = $2',
       [session.id, questionId]
     );
 
@@ -395,7 +397,7 @@ router.post('/skip', async (req, res) => {
 
     // Get question
     const question = await db.getOne(
-      'SELECT correct_option FROM questions WHERE id = ?',
+      'SELECT correct_option FROM questions WHERE id = $1',
       [questionId]
     );
 
@@ -405,20 +407,20 @@ router.post('/skip', async (req, res) => {
         `INSERT INTO player_answers (
           session_id, question_id, question_number, selected_option,
           correct_option, is_correct, result_type, points_awarded
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
         [session.id, questionId, session.current_question_number, null,
-         question.correct_option, 0, 'skipped', 0]
+         question.correct_option, false, 'skipped', 0]
       );
 
       // Update session
       await db.update(
-        'UPDATE game_sessions SET skipped_answers = skipped_answers + 1 WHERE id = ?',
+        'UPDATE game_sessions SET skipped_answers = skipped_answers + 1 WHERE id = $1',
         [session.id]
       );
 
       // Update user
       await db.update(
-        'UPDATE users SET skipped_answers = skipped_answers + 1 WHERE id = ?',
+        'UPDATE users SET skipped_answers = skipped_answers + 1 WHERE id = $1',
         [session.user_id]
       );
     }
@@ -450,7 +452,7 @@ router.post('/complete', async (req, res) => {
     }
 
     const session = await db.getOne(
-      'SELECT * FROM game_sessions WHERE session_token = ?',
+      'SELECT * FROM game_sessions WHERE session_token = $1',
       [sessionToken]
     );
 
@@ -463,8 +465,8 @@ router.post('/complete', async (req, res) => {
 
     // Calculate real elapsed time in seconds
     const durationRow = await db.getOne(
-      `SELECT CAST(ROUND((JULIANDAY(datetime('now')) - JULIANDAY(started_at)) * 86400) AS INTEGER) as secs
-       FROM game_sessions WHERE id = ?`,
+      `SELECT CAST(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - started_at)) AS INTEGER) as secs
+       FROM game_sessions WHERE id = $1`,
       [session.id]
     );
 
@@ -479,8 +481,8 @@ router.post('/complete', async (req, res) => {
     await db.update(
       `UPDATE game_sessions 
        SET game_status = 'completed', 
-           completed_at = datetime('now') 
-       WHERE id = ?`,
+           completed_at = CURRENT_TIMESTAMP 
+       WHERE id = $1`,
       [session.id]
     );
 
@@ -488,15 +490,15 @@ router.post('/complete', async (req, res) => {
     await db.update(
       `UPDATE users 
        SET game_status = 'completed', 
-           completed_at = datetime('now'),
-           total_time_seconds = ?
-       WHERE id = ?`,
+           completed_at = CURRENT_TIMESTAMP,
+           total_time_seconds = $1
+       WHERE id = $2`,
       [finalSeconds, session.user_id]
     );
 
     // Get final user stats
     const user = await db.getOne(
-      'SELECT id, name, class, roll_number, score, correct_answers, wrong_answers, skipped_answers, total_time_seconds, completed_at, game_status FROM users WHERE id = ?',
+      'SELECT id, name, class, roll_number, score, correct_answers, wrong_answers, skipped_answers, total_time_seconds, completed_at, game_status FROM users WHERE id = $1',
       [session.user_id]
     );
 
@@ -510,7 +512,7 @@ router.post('/complete', async (req, res) => {
             skipped_answers, total_time_seconds, completed_at, game_status
            FROM users 
            WHERE game_status = 'completed'
-           ORDER BY score DESC, completed_at ASC`
+           ORDER BY score DESC, total_time_seconds ASC, completed_at ASC`
         );
         
         const leaderboardData = topPlayers.map((player, index) => {
@@ -523,9 +525,11 @@ router.post('/complete', async (req, res) => {
           }
           return {
             ...player,
+            rollNumber: player.roll_number,
             rank: index + 1,
             medal: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '',
-            formatted_time: displayTime
+            formatted_time: displayTime,
+            formatted_date: player.completed_at ? new Date(player.completed_at).toLocaleString() : 'In Progress'
           };
         });
 
@@ -577,7 +581,7 @@ router.get('/stats', async (req, res) => {
     }
 
     const session = await db.getOne(
-      'SELECT * FROM game_sessions WHERE session_token = ?',
+      'SELECT * FROM game_sessions WHERE session_token = $1',
       [sessionToken]
     );
 
@@ -590,7 +594,7 @@ router.get('/stats', async (req, res) => {
 
     // Get answered count
     const answers = await db.getAll(
-      'SELECT * FROM player_answers WHERE session_id = ? ORDER BY answered_at',
+      'SELECT * FROM player_answers WHERE session_id = $1 ORDER BY answered_at',
       [session.id]
     );
 

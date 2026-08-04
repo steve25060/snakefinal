@@ -8,5 +8,6 @@ npm-debug.log*
 .DS_Store
 uploads/
 *.sqlite
+scratch/
 .vscode/
 .idea/

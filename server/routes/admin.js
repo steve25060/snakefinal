@@ -1,6 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
-const db = require('../db');
+const db = require('../db-postgresql');
 
 const router = express.Router();
 
@@ -27,7 +27,7 @@ router.post('/login', async (req, res) => {
     const isAdminDev = (cleanUsername.toLowerCase() === 'admin' || cleanUsername.toLowerCase() === 'modelcollege' || cleanUsername === '1') && (cleanPassword === 'admin123' || cleanPassword.toLowerCase() === 'modelcollege');
 
     let admin = await db.getOne(
-      'SELECT * FROM admin_users WHERE (LOWER(username) = ? OR id = 1) AND is_active = 1',
+      'SELECT * FROM admin_users WHERE (LOWER(username) = $1 OR id = 1) AND is_active = true',
       [cleanUsername.toLowerCase()]
     );
 
@@ -54,7 +54,7 @@ router.post('/login', async (req, res) => {
     // Update last login
     try {
       await db.update(
-        'UPDATE admin_users SET last_login = datetime(\'now\') WHERE id = ?',
+        'UPDATE admin_users SET last_login = CURRENT_TIMESTAMP WHERE id = $1',
         [admin ? admin.id : 1]
       );
     } catch (e) {}
@@ -89,17 +89,17 @@ router.get('/stats', async (req, res) => {
       "SELECT COUNT(*) as count FROM game_sessions WHERE game_status = 'active'"
     );
     const totalQuestions = await db.getOne(
-      "SELECT COUNT(*) as count FROM questions WHERE is_active = 1"
+      "SELECT COUNT(*) as count FROM questions WHERE is_active = true"
     );
 
     const participantStats = {
-      total_participants: totalPlayers?.count || 0,
-      currently_playing: activeGames?.count || 0,
-      completed_players: completedGames?.count || 0
+      total_participants: parseInt(totalPlayers?.count || 0, 10),
+      currently_playing: parseInt(activeGames?.count || 0, 10),
+      completed_players: parseInt(completedGames?.count || 0, 10)
     };
 
     const questionStats = {
-      total_questions: totalQuestions?.count || 0
+      total_questions: parseInt(totalQuestions?.count || 0, 10)
     };
 
     res.json({
@@ -130,15 +130,15 @@ router.get('/dashboard', async (req, res) => {
     // Get counts
     const totalPlayers = await db.getOne('SELECT COUNT(*) as count FROM users');
     const completedGames = await db.getOne(
-      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = ?',
+      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = $1',
       ['completed']
     );
     const activeGames = await db.getOne(
-      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = ?',
+      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = $1',
       ['active']
     );
     const totalQuestions = await db.getOne(
-      'SELECT COUNT(*) as count FROM questions WHERE is_active = 1'
+      'SELECT COUNT(*) as count FROM questions WHERE is_active = true'
     );
 
     // Get recent players
@@ -162,10 +162,10 @@ router.get('/dashboard', async (req, res) => {
       success: true,
       data: {
         stats: {
-          totalPlayers: totalPlayers?.count || 0,
-          completedGames: completedGames?.count || 0,
-          activeGames: activeGames?.count || 0,
-          totalQuestions: totalQuestions?.count || 0
+          totalPlayers: parseInt(totalPlayers?.count || 0, 10),
+          completedGames: parseInt(completedGames?.count || 0, 10),
+          activeGames: parseInt(activeGames?.count || 0, 10),
+          totalQuestions: parseInt(totalQuestions?.count || 0, 10)
         },
         recentPlayers,
         topScorers
@@ -191,15 +191,16 @@ router.get('/questions', async (req, res) => {
 
     let query = 'SELECT * FROM questions WHERE 1=1';
     const params = [];
+    let paramIdx = 1;
 
     if (language) {
-      query += ' AND LOWER(language) = ?';
+      query += ` AND LOWER(language) = $${paramIdx++}`;
       params.push(language.toLowerCase());
     }
 
     if (active !== undefined) {
-      query += ' AND is_active = ?';
-      params.push(active === 'true' ? 1 : 0);
+      query += ` AND is_active = $${paramIdx++}`;
+      params.push(active === 'true' || active === '1' || active === true);
     }
 
     query += ' ORDER BY created_at DESC';
@@ -257,7 +258,7 @@ router.post('/questions', async (req, res) => {
       `INSERT INTO questions (
         language, question_text, option_a, option_b, option_c, option_d,
         correct_option, difficulty_level, is_active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true) RETURNING id`,
       [language, questionText, optionA, optionB, optionC, optionD, correctOption, difficultyLevel || 'medium']
     );
 
@@ -295,7 +296,7 @@ router.put('/questions/:id', async (req, res) => {
       isActive
     } = req.body;
 
-    const existing = await db.getOne('SELECT id FROM questions WHERE id = ?', [id]);
+    const existing = await db.getOne('SELECT id FROM questions WHERE id = $1', [id]);
 
     if (!existing) {
       return res.status(404).json({ 
@@ -306,12 +307,12 @@ router.put('/questions/:id', async (req, res) => {
 
     await db.update(
       `UPDATE questions SET
-        language = ?, question_text = ?, option_a = ?, option_b = ?,
-        option_c = ?, option_d = ?, correct_option = ?, difficulty_level = ?,
-        is_active = ?, updated_at = datetime('now')
-       WHERE id = ?`,
+        language = $1, question_text = $2, option_a = $3, option_b = $4,
+        option_c = $5, option_d = $6, correct_option = $7, difficulty_level = $8,
+        is_active = $9, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $10`,
       [language, questionText, optionA, optionB, optionC, optionD, 
-       correctOption, difficultyLevel, isActive ? 1 : 0, id]
+       correctOption, difficultyLevel || 'medium', Boolean(isActive), id]
     );
 
     res.json({
@@ -336,7 +337,7 @@ router.delete('/questions/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existing = await db.getOne('SELECT id FROM questions WHERE id = ?', [id]);
+    const existing = await db.getOne('SELECT id FROM questions WHERE id = $1', [id]);
 
     if (!existing) {
       return res.status(404).json({ 
@@ -346,7 +347,7 @@ router.delete('/questions/:id', async (req, res) => {
     }
 
     await db.update(
-      'UPDATE questions SET is_active = 0 WHERE id = ?',
+      'UPDATE questions SET is_active = false WHERE id = $1',
       [id]
     );
 
@@ -401,7 +402,7 @@ router.delete('/players/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    const existing = await db.getOne('SELECT id FROM users WHERE id = ?', [id]);
+    const existing = await db.getOne('SELECT id FROM users WHERE id = $1', [id]);
 
     if (!existing) {
       return res.status(404).json({ 
@@ -411,7 +412,7 @@ router.delete('/players/:id', async (req, res) => {
     }
 
     // Delete player (cascade will delete sessions and answers)
-    await db.runQuery('DELETE FROM users WHERE id = ?', [id]);
+    await db.runQuery('DELETE FROM users WHERE id = $1', [id]);
 
     res.json({
       success: true,

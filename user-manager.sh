@@ -30,7 +30,7 @@ case $option in
   2)
     echo ""
     echo "All Users:"
-    psql -h localhost -U postgres -d snake_mcq -c "SELECT id, name, roll_number FROM users;" 2>/dev/null
+    psql -h localhost -U postgres -d snake_mcq_game -c "SELECT id, name, roll_number FROM users;" 2>/dev/null
     ;;
   
   3)

@@ -1,14 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { initializeDatabase } = require('./db');
+const { initializeDatabase } = require('./db-postgresql');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Initialize database on startup
 initializeDatabase()
-  .then(() => console.log('✅ Database ready'))
+  .then(() => console.log('✅ PostgreSQL Database ready'))
   .catch(err => {
     console.error('❌ Database initialization failed:', err);
     process.exit(1);

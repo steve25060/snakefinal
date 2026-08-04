@@ -1,6 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const db = require('../db');
+const db = require('../db-postgresql');
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ router.post('/register', async (req, res) => {
 
     // Check if roll number already exists
     const existing = await db.getOne(
-      'SELECT id FROM users WHERE roll_number = ?',
+      'SELECT id FROM users WHERE roll_number = $1',
       [actualRollNumber]
     );
 
@@ -39,15 +39,23 @@ router.post('/register', async (req, res) => {
     const sessionToken = uuidv4();
     const result = await db.insert(
       `INSERT INTO users (name, roll_number, class, session_token, game_status) 
-       VALUES (?, ?, ?, ?, 'waiting')`,
+       VALUES ($1, $2, $3, $4, 'waiting')`,
       [name, actualRollNumber, userClass || '', sessionToken]
     );
 
     // Create game session
     const sessionResult = await db.insert(
-      'INSERT INTO game_sessions (user_id, session_token, game_status) VALUES (?, ?, ?)',
+      'INSERT INTO game_sessions (user_id, session_token, game_status) VALUES ($1, $2, $3)',
       [result.id, sessionToken, 'active']
     );
+
+    // Broadcast real-time player event
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('player-joined', { userId: result.id, name, rollNumber: actualRollNumber });
+      }
+    } catch (e) {}
 
     res.status(201).json({
       success: true,
@@ -65,6 +73,12 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ 
+        success: false,
+        error: 'Roll number already registered' 
+      });
+    }
     console.error('Registration error:', error);
     res.status(500).json({ 
       success: false,
@@ -92,7 +106,7 @@ router.post('/login', async (req, res) => {
     }
 
     const user = await db.getOne(
-      'SELECT id, name, roll_number, class FROM users WHERE roll_number = ?',
+      'SELECT id, name, roll_number, class FROM users WHERE roll_number = $1',
       [actualRollNumber]
     );
 
@@ -107,20 +121,20 @@ router.post('/login', async (req, res) => {
     const sessionToken = uuidv4();
 
     await db.update(
-      'UPDATE users SET session_token = ?, game_status = ? WHERE id = ?',
+      'UPDATE users SET session_token = $1, game_status = $2 WHERE id = $3',
       [sessionToken, 'playing', user.id]
     );
 
     // Check for existing active session
     let session = await db.getOne(
-      'SELECT id FROM game_sessions WHERE user_id = ? AND game_status = ?',
+      'SELECT id FROM game_sessions WHERE user_id = $1 AND game_status = $2',
       [user.id, 'active']
     );
 
     let sessionId;
     if (!session) {
       const newSession = await db.insert(
-        'INSERT INTO game_sessions (user_id, session_token, game_status) VALUES (?, ?, ?)',
+        'INSERT INTO game_sessions (user_id, session_token, game_status) VALUES ($1, $2, $3)',
         [user.id, sessionToken, 'active']
       );
       sessionId = newSession.id;
@@ -128,10 +142,18 @@ router.post('/login', async (req, res) => {
       sessionId = session.id;
       // Update session token
       await db.update(
-        'UPDATE game_sessions SET session_token = ? WHERE id = ?',
+        'UPDATE game_sessions SET session_token = $1 WHERE id = $2',
         [sessionToken, sessionId]
       );
     }
+
+    // Broadcast real-time player event
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('player-joined', { userId: user.id, name: user.name, rollNumber: user.roll_number });
+      }
+    } catch (e) {}
 
     res.json({
       success: true,
@@ -167,7 +189,7 @@ router.post('/logout', async (req, res) => {
 
     if (sessionToken) {
       await db.update(
-        'UPDATE users SET session_token = NULL WHERE session_token = ?',
+        'UPDATE users SET session_token = NULL WHERE session_token = $1',
         [sessionToken]
       );
     }
@@ -201,7 +223,7 @@ router.get('/me', async (req, res) => {
     const user = await db.getOne(
       `SELECT id, name, roll_number, class, score, correct_answers, 
               wrong_answers, skipped_answers, game_status 
-       FROM users WHERE session_token = ?`,
+       FROM users WHERE session_token = $1`,
       [sessionToken]
     );
 
@@ -212,7 +234,8 @@ router.get('/me', async (req, res) => {
       });
     }
 
-    res.json({ success: true, user });
+    user.rollNumber = user.roll_number;
+    res.json({ success: true, user, data: user });
 
   } catch (error) {
     console.error('Get user error:', error);

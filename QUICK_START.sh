@@ -33,9 +33,9 @@ fi
 
 # Check Database
 echo -n "Database... "
-psql -h localhost -U postgres -d snake_mcq -c "SELECT 1" > /dev/null 2>&1
+psql -h localhost -U postgres -d snake_mcq_game -c "SELECT 1" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    count=$(psql -h localhost -U postgres -d snake_mcq -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tail -1 | xargs)
+    count=$(psql -h localhost -U postgres -d snake_mcq_game -c "SELECT COUNT(*) FROM users;" 2>/dev/null | tail -1 | xargs)
     echo "✅ Connected ($count users)"
 else
     echo "❌ NOT CONNECTED"

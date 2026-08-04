@@ -401,6 +401,36 @@ Game.startGame = async () => {
     }
 };
 
+/**
+ * Leaderboard API Calls
+ */
+const Leaderboard = {
+    getTop: async (limit = 10) => {
+        try {
+            return await apiRequest(limit ? `/leaderboard/top/${limit}` : '/leaderboard', { method: 'GET' });
+        } catch (error) {
+            console.error('Get leaderboard error:', error);
+            throw error;
+        }
+    },
+    getStats: async () => {
+        try {
+            return await apiRequest('/leaderboard/stats', { method: 'GET' });
+        } catch (error) {
+            console.error('Get leaderboard stats error:', error);
+            throw error;
+        }
+    },
+    getPlayerRank: async (userId) => {
+        try {
+            return await apiRequest(`/leaderboard/player/${userId}`, { method: 'GET' });
+        } catch (error) {
+            console.error('Get player rank error:', error);
+            throw error;
+        }
+    }
+};
+
 // Export all to window object for global availability
 window.API_BASE = API_BASE;
 window.STORAGE_KEYS = STORAGE_KEYS;

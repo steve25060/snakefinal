@@ -1,5 +1,5 @@
 const express = require('express');
-const db = require('../db');
+const db = require('../db-postgresql');
 
 const router = express.Router();
 
@@ -34,19 +34,19 @@ const getLeaderboardHandler = async (req, res) => {
         u.created_at,
         COALESCE(
           (
-            SELECT CAST(ROUND((JULIANDAY(gs.completed_at) - JULIANDAY(gs.started_at)) * 86400) AS INTEGER)
+            SELECT CAST(EXTRACT(EPOCH FROM (gs.completed_at - gs.started_at)) AS INTEGER)
             FROM game_sessions gs
             WHERE gs.user_id = u.id AND gs.completed_at IS NOT NULL
             ORDER BY gs.completed_at DESC LIMIT 1
           ),
           (
-            SELECT CAST(ROUND((JULIANDAY(COALESCE(u.completed_at, datetime('now'))) - JULIANDAY(u.created_at)) * 86400) AS INTEGER)
+            SELECT CAST(EXTRACT(EPOCH FROM (COALESCE(u.completed_at, CURRENT_TIMESTAMP) - u.created_at)) AS INTEGER)
           )
         ) AS total_time_seconds,
         ROW_NUMBER() OVER (ORDER BY u.score DESC, u.completed_at ASC) as rank
        FROM users u
        ORDER BY u.score DESC, u.completed_at ASC
-       LIMIT ?`,
+       LIMIT $1`,
       [limit]
     );
 
@@ -62,6 +62,7 @@ const getLeaderboardHandler = async (req, res) => {
 
       return {
         ...player,
+        rollNumber: player.roll_number,
         medal,
         total_time_seconds: timeSecs,
         formatted_time: formattedTime
@@ -97,11 +98,11 @@ router.get('/stats', async (req, res) => {
     // Get counts
     const totalPlayers = await db.getOne('SELECT COUNT(*) as count FROM users');
     const completedGames = await db.getOne(
-      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = ?',
+      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = $1',
       ['completed']
     );
     const activeGames = await db.getOne(
-      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = ?',
+      'SELECT COUNT(*) as count FROM game_sessions WHERE game_status = $1',
       ['active']
     );
     
@@ -112,7 +113,7 @@ router.get('/stats', async (req, res) => {
 
     // Get average score
     const avgScore = await db.getOne(
-      'SELECT AVG(score) as avg FROM users WHERE game_status = ?',
+      'SELECT AVG(score) as avg FROM users WHERE game_status = $1',
       ['completed']
     );
 
@@ -123,23 +124,23 @@ router.get('/stats', async (req, res) => {
 
     // Get correct/wrong counts
     const correctAnswers = await db.getOne(
-      'SELECT COUNT(*) as count FROM player_answers WHERE is_correct = 1'
+      'SELECT COUNT(*) as count FROM player_answers WHERE is_correct = true'
     );
     const wrongAnswers = await db.getOne(
-      'SELECT COUNT(*) as count FROM player_answers WHERE is_correct = 0'
+      'SELECT COUNT(*) as count FROM player_answers WHERE is_correct = false'
     );
 
     res.json({
       success: true,
       data: {
-        totalPlayers: totalPlayers?.count || 0,
-        completedGames: completedGames?.count || 0,
-        activeGames: activeGames?.count || 0,
-        highestScore: highestScore?.score || 0,
-        averageScore: Math.round(avgScore?.avg || 0),
-        totalQuestionsAttempted: totalAnswers?.count || 0,
-        totalCorrectAnswers: correctAnswers?.count || 0,
-        totalWrongAnswers: wrongAnswers?.count || 0
+        totalPlayers: parseInt(totalPlayers?.count || 0, 10),
+        completedGames: parseInt(completedGames?.count || 0, 10),
+        activeGames: parseInt(activeGames?.count || 0, 10),
+        highestScore: parseInt(highestScore?.score || 0, 10),
+        averageScore: Math.round(parseFloat(avgScore?.avg || 0)),
+        totalQuestionsAttempted: parseInt(totalAnswers?.count || 0, 10),
+        totalCorrectAnswers: parseInt(correctAnswers?.count || 0, 10),
+        totalWrongAnswers: parseInt(wrongAnswers?.count || 0, 10)
       }
     });
 
@@ -161,7 +162,7 @@ router.get('/player/:id', async (req, res) => {
     const { id } = req.params;
 
     const user = await db.getOne(
-      'SELECT id, name, roll_number, score, correct_answers, wrong_answers, skipped_answers FROM users WHERE id = ?',
+      'SELECT id, name, roll_number, score, correct_answers, wrong_answers, skipped_answers FROM users WHERE id = $1',
       [id]
     );
 
@@ -174,7 +175,7 @@ router.get('/player/:id', async (req, res) => {
 
     // Get rank
     const allPlayers = await db.getAll(
-      'SELECT id, score FROM users WHERE game_status = ? ORDER BY score DESC',
+      'SELECT id, score FROM users WHERE game_status = $1 ORDER BY score DESC',
       ['completed']
     );
 

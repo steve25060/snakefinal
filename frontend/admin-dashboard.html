@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Snake MCQ Challenge</title>
-  <link rel="stylesheet" href="css/style.css?v=6.0">
-  <link rel="stylesheet" href="css/admin.css?v=6.0">
-  <link rel="stylesheet" href="css/responsive.css?v=6.0">
+  <link rel="stylesheet" href="css/style.css?v=10.0">
+  <link rel="stylesheet" href="css/admin.css?v=10.0">
+  <link rel="stylesheet" href="css/responsive.css?v=10.0">
   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 </head>
   <body class="admin-page">
@@ -76,6 +76,7 @@
           <button class="filter-btn active" onclick="loadAdminLeaderboard('top10')">Top 10</button>
           <button class="filter-btn" onclick="loadAdminLeaderboard('top20')">Top 20</button>
           <button class="filter-btn" onclick="loadAdminLeaderboard('top50')">Top 50</button>
+          <button class="filter-btn" onclick="loadAdminLeaderboard('top100')">Top 100</button>
           <button class="filter-btn" onclick="loadAdminLeaderboard('all')">All</button>
         </div>
 
@@ -182,13 +183,20 @@
       </div>
     </div>
 
-  <script src="/js/api.js?v=6.0"></script>
+  <script src="/js/api.js?v=10.0"></script>
   <script>
     let adminData = {
       isAdmin: false,
       participants: [],
       questions: [],
       leaderboard: [],
+    };
+
+    // Cache system for admin stats (Fix #3: Caching)
+    let adminStatsCache = {
+      data: null,
+      timestamp: 0,
+      ttl: 5000  // 5 second cache
     };
 
     // Check admin authentication
@@ -217,19 +225,38 @@
       // Setup WebSocket
       setupAdminWebSocket();
 
-      // Refresh real-time data every 2 seconds
+      // Refresh real-time data every 10 seconds (optimized for 200+ players)
       setInterval(async () => {
         await loadDashboardStats();
         await loadAdminLeaderboard(adminData.currentLeaderboardFilter || 'top10');
-      }, 2000);
+      }, 10000);
     }
 
-    // Load dashboard stats
+    // Load dashboard stats with caching (Fix #3: Stats Caching)
     async function loadDashboardStats() {
       try {
+        const now = Date.now();
+        
+        // Return cached data if still fresh
+        if (adminStatsCache.data && (now - adminStatsCache.timestamp) < adminStatsCache.ttl) {
+          const pStats = adminStatsCache.data.participantStats;
+          const qStats = adminStatsCache.data.questionStats;
+
+          document.getElementById('dashTotalParticipants').textContent = pStats.total_participants || 0;
+          document.getElementById('dashCurrentlyPlaying').textContent = pStats.currently_playing || 0;
+          document.getElementById('dashCompleted').textContent = pStats.completed_players || 0;
+          document.getElementById('dashTotalQuestions').textContent = qStats.total_questions || 0;
+          return;
+        }
+        
+        // Fetch fresh data
         const response = await apiCall('/api/admin/stats', 'GET');
         
         if (response.success) {
+          // Cache the data
+          adminStatsCache.data = response;
+          adminStatsCache.timestamp = now;
+          
           const pStats = response.participantStats;
           const qStats = response.questionStats;
 
@@ -258,6 +285,7 @@
         if (type === 'top10') limit = 10;
         else if (type === 'top20') limit = 20;
         else if (type === 'top50') limit = 50;
+        else if (type === 'top100') limit = 100;
         else limit = 1000;
 
         const response = await apiCall(`/api/leaderboard/top/${limit}`, 'GET');
@@ -301,6 +329,7 @@
               <th>Correct/Wrong</th>
               <th>Status</th>
               <th>Completed</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -320,7 +349,8 @@
             <td style="color: #38bdf8; font-weight: bold;">⏱️ ${timeDisplay}</td>
             <td>✓${player.correct_answers} / ✗${player.wrong_answers}</td>
             <td><span class="status-badge status-${player.game_status}">${player.game_status}</span></td>
-            <td>${player.completed_at ? new Date(player.completed_at).toLocaleString() : 'In Progress'}</td>
+            <td>${player.formatted_date || (player.completed_at ? new Date(player.completed_at).toLocaleString() : 'In Progress')}</td>
+            <td><button class="btn btn-danger btn-tiny" onclick="deleteUser(${player.id}, '${player.name}')">Delete</button></td>
           </tr>
         `;
       });
@@ -381,7 +411,10 @@
             <td><span class="status-badge status-${participant.game_status}">${participant.game_status}</span></td>
             <td>✓${participant.correct_answers} / ✗${participant.wrong_answers} / ⊘${participant.skipped_answers}</td>
             <td>${new Date(participant.started_at).toLocaleString()}</td>
-            <td><button class="btn btn-primary btn-tiny" onclick="viewParticipantDetails(${participant.id})">View</button></td>
+            <td>
+              <button class="btn btn-primary btn-tiny" onclick="viewParticipantDetails(${participant.id})">View</button>
+              <button class="btn btn-danger btn-tiny" onclick="deleteUser(${participant.id}, '${participant.name}')">Delete</button>
+            </td>
           </tr>
         `;
       });
@@ -397,6 +430,30 @@
         p.roll_number.toLowerCase().includes(query)
       );
       renderAdminParticipants(filtered);
+    }
+
+    // Delete user function
+    async function deleteUser(userId, userName) {
+      const confirmDelete = confirm(`Are you sure you want to permanently delete "${userName}"? This action cannot be undone and will remove all associated data.`);
+      
+      if (!confirmDelete) {
+        return;
+      }
+
+      try {
+        const response = await apiCall(`/api/admin/players/${userId}`, 'DELETE');
+
+        if (response.success) {
+          alert(`✅ User "${userName}" has been deleted successfully!`);
+          await loadAdminParticipants();
+          await loadDashboardStats();
+        } else {
+          alert('❌ Error: ' + (response.error || 'Failed to delete user'));
+        }
+      } catch (error) {
+        alert('❌ Error: ' + error.message);
+        console.error('Delete user error:', error);
+      }
     }
 
     // Load admin questions
@@ -455,12 +512,18 @@
       document.getElementById('questionsContainer').innerHTML = tableHTML;
     }
 
-    // Add question
+    let editingQuestionId = null;
+
+    // Add / Edit question
     function showAddQuestionForm() {
+      editingQuestionId = null;
       document.getElementById('addQuestionForm').style.display = 'block';
+      const submitBtn = document.querySelector('#addQuestionForm button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Add Question';
     }
 
     function hideAddQuestionForm() {
+      editingQuestionId = null;
       document.getElementById('addQuestionForm').style.display = 'none';
       document.getElementById('questionLanguage').value = '';
       document.getElementById('questionText').value = '';
@@ -469,6 +532,46 @@
       document.getElementById('optionC').value = '';
       document.getElementById('optionD').value = '';
       document.getElementById('correctOption').value = '';
+      const submitBtn = document.querySelector('#addQuestionForm button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Add Question';
+    }
+
+    function editQuestion(questionId) {
+      const question = adminData.questions.find(q => q.id === questionId);
+      if (!question) return;
+
+      editingQuestionId = questionId;
+      document.getElementById('questionLanguage').value = question.language.toLowerCase() === 'python' ? 'Python' : 'C';
+      document.getElementById('questionText').value = question.question_text;
+      document.getElementById('optionA').value = question.option_a;
+      document.getElementById('optionB').value = question.option_b;
+      document.getElementById('optionC').value = question.option_c;
+      document.getElementById('optionD').value = question.option_d;
+      document.getElementById('correctOption').value = question.correct_option;
+
+      document.getElementById('addQuestionForm').style.display = 'block';
+      const submitBtn = document.querySelector('#addQuestionForm button[type="submit"]');
+      if (submitBtn) submitBtn.textContent = 'Save Changes';
+    }
+
+    function viewParticipantDetails(participantId) {
+      const p = adminData.participants.find(part => part.id === participantId);
+      if (!p) {
+        alert('Participant not found.');
+        return;
+      }
+
+      alert(`👤 PARTICIPANT DETAILS
+=======================
+Name: ${p.name}
+Roll Number: ${p.roll_number}
+Class: ${p.class || '-'}
+Score: ${p.score} pts
+Game Status: ${p.game_status}
+Correct Answers: ${p.correct_answers}
+Wrong Answers: ${p.wrong_answers}
+Skipped Answers: ${p.skipped_answers}
+Started At: ${p.started_at ? new Date(p.started_at).toLocaleString() : '-'}`);
     }
 
     async function handleAddQuestion(event) {
@@ -483,18 +586,32 @@
       const correctOption = document.getElementById('correctOption').value;
 
       try {
-        const response = await apiCall('/api/admin/questions', 'POST', {
-          language,
-          questionText,
-          optionA,
-          optionB,
-          optionC,
-          optionD,
-          correctOption,
-        });
+        let response;
+        if (editingQuestionId) {
+          response = await apiCall(`/api/admin/questions/${editingQuestionId}`, 'PUT', {
+            language,
+            questionText,
+            optionA,
+            optionB,
+            optionC,
+            optionD,
+            correctOption,
+            isActive: true
+          });
+        } else {
+          response = await apiCall('/api/admin/questions', 'POST', {
+            language,
+            questionText,
+            optionA,
+            optionB,
+            optionC,
+            optionD,
+            correctOption,
+          });
+        }
 
         if (response.success) {
-          alert('Question added successfully!');
+          alert(editingQuestionId ? 'Question updated successfully!' : 'Question added successfully!');
           hideAddQuestionForm();
           await loadAdminQuestions();
         }
@@ -549,22 +666,53 @@
     // WebSocket setup for admin
     function setupAdminWebSocket() {
       try {
-        const socket = io();
+        // Determine Socket.IO URL
+        const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+          ? `http://localhost:3000`
+          : window.location.origin;
+
+        console.log('🔌 Connecting to Socket.IO at:', socketUrl);
+        
+        const socket = io(socketUrl, {
+          reconnection: true,
+          reconnectionDelay: 1000,
+          reconnectionDelayMax: 5000,
+          reconnectionAttempts: 5
+        });
+
+        socket.on('connect', () => {
+          console.log('✓ Socket.IO connected');
+          socket.emit('admin-join', { adminId: localStorage.getItem('adminId') });
+        });
+
+        socket.on('disconnect', () => {
+          console.log('⚠ Socket.IO disconnected');
+        });
+
         socket.emit('admin-join', { adminId: localStorage.getItem('adminId') });
 
+        socket.on('player-joined', () => {
+          adminStatsCache.data = null;
+          loadDashboardStats();
+          loadAdminParticipants();
+        });
+
         socket.on('score-updated', () => {
+          adminStatsCache.data = null;
           loadAdminLeaderboard(adminData.currentLeaderboardFilter || 'top10');
           loadDashboardStats();
           loadAdminParticipants();
         });
 
         socket.on('player-completed', () => {
+          adminStatsCache.data = null;
           loadAdminLeaderboard(adminData.currentLeaderboardFilter || 'top10');
           loadDashboardStats();
           loadAdminParticipants();
         });
 
         socket.on('leaderboard-updated', (players) => {
+          adminStatsCache.data = null;
           if (Array.isArray(players)) {
             adminData.leaderboard = players;
             renderAdminLeaderboard(players);
@@ -573,6 +721,7 @@
         });
 
         socket.on('leaderboard-data', (players) => {
+          adminStatsCache.data = null;
           if (Array.isArray(players)) {
             adminData.leaderboard = players;
             renderAdminLeaderboard(players);
@@ -581,10 +730,11 @@
         });
 
         socket.on('question-added', () => {
+          adminStatsCache.data = null;
           loadAdminQuestions();
         });
       } catch (error) {
-        console.log('WebSocket not available for admin');
+        console.error('Socket.IO Error:', error);
       }
     }
 

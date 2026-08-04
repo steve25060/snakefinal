@@ -126,9 +126,9 @@
         </div>
     </div>
 
-    <script src="js/api.js?v=12.0"></script>
-    <script src="js/app.js?v=12.0"></script>
-    <script src="js/snake-simple.js?v=12.0"></script>
+    <script src="js/api.js?v=10.0"></script>
+    <script src="js/app.js?v=10.0"></script>
+    <script src="js/snake-simple.js?v=10.0"></script>
     <script>
         // Game constants
         const READING_TIME = 20;      // 20 seconds to read question
@@ -240,12 +240,23 @@
             const totalSecs = Math.max(1, Math.round((Date.now() - startTime) / 1000));
 
             try {
+                console.log('📤 Sending game completion...');
                 const res = await Game.completeGame(totalSecs);
+                console.log('✅ Game completion response:', res);
+                
                 if (res && res.user) {
+                    console.log('💾 Saving to localStorage:', res.user);
                     localStorage.setItem('playerGameSummary', JSON.stringify(res.user));
+                    localStorage.setItem('lastGameScore', res.user.score);
+                    localStorage.setItem('lastGameCorrect', res.user.correct_answers);
+                    localStorage.setItem('lastGameWrong', res.user.wrong_answers);
+                    localStorage.setItem('lastGameSkipped', res.user.skipped_answers);
+                    localStorage.setItem('lastGameTotalTime', res.user.formattedTime || `${Math.floor(totalSecs/60)}m ${totalSecs%60}s`);
+                } else {
+                    console.warn('⚠️ No user data in response:', res);
                 }
             } catch (e) {
-                console.error('Termination complete error:', e);
+                console.error('❌ Termination complete error:', e);
             }
 
             window.location.href = 'summary.html';

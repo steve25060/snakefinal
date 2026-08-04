@@ -111,6 +111,18 @@ CREATE INDEX IF NOT EXISTS idx_player_answers_question_id ON player_answers(ques
 CREATE INDEX IF NOT EXISTS idx_player_answers_is_correct ON player_answers(is_correct);
 
 -- ============================================
+-- PERFORMANCE INDEXES FOR 200+ PLAYERS (ADDED)
+-- ============================================
+CREATE INDEX IF NOT EXISTS idx_game_sessions_user_and_status 
+  ON game_sessions(user_id, game_status);
+
+CREATE INDEX IF NOT EXISTS idx_player_answers_by_result 
+  ON player_answers(session_id, is_correct);
+
+CREATE INDEX IF NOT EXISTS idx_users_by_status_and_time
+  ON users(game_status, completed_at);
+
+-- ============================================
 -- GAME STATISTICS TABLE
 -- ============================================
 CREATE TABLE IF NOT EXISTS game_statistics (

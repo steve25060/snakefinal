@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game Summary - Snake MCQ Challenge</title>
-    <link rel="stylesheet" href="css/style.css?v=6.0">
-    <link rel="stylesheet" href="css/responsive.css?v=6.0">
+    <link rel="stylesheet" href="css/style.css?v=10.0">
+    <link rel="stylesheet" href="css/responsive.css?v=10.0">
     <style>
         .summary-container {
             min-height: 100vh;
@@ -195,13 +195,13 @@
                     <div class="stat-value primary" id="summaryTotalTime">0s</div>
                 </div>
 
-                <div class="stat-box">
+                <div class="stat-box highlight">
                     <div class="stat-icon">✅</div>
                     <div class="stat-label">CORRECT ANSWERS</div>
                     <div class="stat-value success" id="summaryCorrect">0 / 20</div>
                 </div>
 
-                <div class="stat-box">
+                <div class="stat-box highlight">
                     <div class="stat-icon">❌</div>
                     <div class="stat-label">WRONG ANSWERS</div>
                     <div class="stat-value danger" id="summaryWrong">0 / 20</div>
@@ -209,63 +209,117 @@
             </div>
 
             <div class="summary-actions">
-                <button onclick="playAgain()" class="btn btn-primary btn-large">🎮 Play Again</button>
+               
                 <button onclick="userLogout()" class="btn btn-secondary btn-large">🚪 Logout</button>
             </div>
         </div>
     </div>
 
-    <script src="js/api.js?v=6.0"></script>
+    <script src="js/api.js?v=10.0"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             loadSummaryData();
         });
 
-        function loadSummaryData() {
-            // Retrieve player summary from localStorage
-            const name = localStorage.getItem(STORAGE_KEYS.USER_NAME) || localStorage.getItem('playerName') || 'Player';
-            const roll = localStorage.getItem(STORAGE_KEYS.ROLL_NUMBER) || localStorage.getItem('rollNumber') || '-';
-            const defaultClass = localStorage.getItem('snakemcq_user_class') || localStorage.getItem('playerClass') || localStorage.getItem('userClass') || '-';
-            const lang = (localStorage.getItem('selectedLanguage') || 'python').toUpperCase();
-            
-            const rawSummary = localStorage.getItem('playerGameSummary');
-            let summaryData = {};
-            if (rawSummary) {
-                try { summaryData = JSON.parse(rawSummary); } catch (e) {}
-            }
+        async function loadSummaryData() {
+            try {
+                console.log('🔄 Loading summary data...');
+                
+                // Get user info from localStorage
+                const name = localStorage.getItem(STORAGE_KEYS.USER_NAME) || localStorage.getItem('playerName') || 'Player';
+                const roll = localStorage.getItem(STORAGE_KEYS.ROLL_NUMBER) || localStorage.getItem('rollNumber') || '-';
+                const defaultClass = localStorage.getItem('snakemcq_user_class') || localStorage.getItem('playerClass') || localStorage.getItem('userClass') || '-';
+                const lang = (localStorage.getItem('selectedLanguage') || 'python').toUpperCase();
+                
+                console.log('📝 User info from localStorage:', { name, roll });
+                
+                // BEST APPROACH: Use game completion data first (most reliable, just completed)
+                let summaryData = {};
+                const rawSummary = localStorage.getItem('playerGameSummary');
+                
+                if (rawSummary) {
+                    try { 
+                        summaryData = JSON.parse(rawSummary);
+                        console.log('✅ Using game completion data from localStorage:', {
+                            score: summaryData.score,
+                            correct: summaryData.correct_answers,
+                            wrong: summaryData.wrong_answers,
+                            skipped: summaryData.skipped_answers
+                        });
+                    } catch (e) {
+                        console.warn('Could not parse stored summary data:', e);
+                    }
+                } else {
+                    console.log('⚠️ No playerGameSummary in localStorage, attempting API fetch...');
+                    
+                    // FALLBACK: Try API if no localStorage data
+                    try {
+                        const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN) || localStorage.getItem('sessionToken');
+                        console.log('🔑 Session token available:', !!sessionToken);
+                        
+                        if (sessionToken) {
+                            const userResponse = await apiRequest('/auth/me', {
+                                method: 'GET',
+                                includeSessionToken: true
+                            });
+                            
+                            if (userResponse && userResponse.user) {
+                                summaryData = userResponse.user;
+                                console.log('✅ Fetched user data from API:', {
+                                    score: userResponse.user.score,
+                                    correct: userResponse.user.correct_answers
+                                });
+                            }
+                        }
+                    } catch (apiError) {
+                        console.error('❌ API fetch failed:', apiError.message);
+                    }
+                }
 
-            const pClass = summaryData.class || summaryData.className || defaultClass;
+                const pClass = summaryData.class || summaryData.className || defaultClass;
+                const score = summaryData.score || 0;
+                const correct = summaryData.correct_answers || 0;
+                const wrong = summaryData.wrong_answers || 0;
+                const skipped = summaryData.skipped_answers || 0;
+                
+                let totalTime = 'N/A';
+                if (summaryData.formattedTime) {
+                    totalTime = summaryData.formattedTime;
+                } else if (summaryData.total_time_seconds) {
+                    const m = Math.floor(summaryData.total_time_seconds / 60);
+                    const s = Math.floor(summaryData.total_time_seconds % 60);
+                    totalTime = m > 0 ? `${m}m ${s}s` : `${s}s`;
+                }
 
-            const score = summaryData.score !== undefined ? summaryData.score : (localStorage.getItem('lastGameScore') || 0);
-            const correct = summaryData.correct_answers !== undefined ? summaryData.correct_answers : (localStorage.getItem('lastGameCorrect') || 0);
-            const wrong = summaryData.wrong_answers !== undefined ? summaryData.wrong_answers : (localStorage.getItem('lastGameWrong') || 0);
-            const skipped = summaryData.skipped_answers !== undefined ? summaryData.skipped_answers : (localStorage.getItem('lastGameSkipped') || 0);
-            
-            const totalTime = summaryData.formattedTime || localStorage.getItem('lastGameTotalTime') || 'N/A';
-            const accuracy = Math.round((correct / 20) * 100);
+                console.log('📊 Final summary data:', { score, correct, wrong, skipped, totalTime });
 
-            // Populate UI
-            document.getElementById('summaryPlayerName').textContent = name;
-            document.getElementById('summaryRollNum').textContent = roll;
-            document.getElementById('summaryClass').textContent = pClass && pClass !== '' ? pClass : '-';
-            document.getElementById('summaryLang').textContent = lang;
-            
-            document.getElementById('summaryScore').textContent = `${score} pts`;
-            document.getElementById('summaryTotalTime').textContent = totalTime;
-            document.getElementById('summaryCorrect').textContent = `${correct} / 20`;
-            document.getElementById('summaryWrong').textContent = `${wrong} / 20`;
+                // Populate UI
+                document.getElementById('summaryPlayerName').textContent = name;
+                document.getElementById('summaryRollNum').textContent = roll;
+                document.getElementById('summaryClass').textContent = pClass && pClass !== '' ? pClass : '-';
+                document.getElementById('summaryLang').textContent = lang;
+                
+                document.getElementById('summaryScore').textContent = `${score} pts`;
+                document.getElementById('summaryTotalTime').textContent = totalTime;
+                document.getElementById('summaryCorrect').textContent = `${correct} / 20`;
+                document.getElementById('summaryWrong').textContent = `${wrong} / 20`;
 
-            // Performance badge
-            const badgeEl = document.getElementById('performanceBadge');
-            if (accuracy >= 80) {
-                badgeEl.textContent = '🌟 GOLD MASTER';
-                badgeEl.style.background = 'linear-gradient(135deg, #eab308, #f59e0b)';
-            } else if (accuracy >= 50) {
-                badgeEl.textContent = '🥈 SILVER CODER';
-                badgeEl.style.background = 'linear-gradient(135deg, #06b6d4, #3b82f6)';
-            } else {
-                badgeEl.textContent = '🥉 BRONZE DEVELOPER';
-                badgeEl.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+                // Performance badge based on correct answers
+                const badgeEl = document.getElementById('performanceBadge');
+                if (correct >= 16) {
+                    badgeEl.textContent = '🌟 GOLD MASTER';
+                    badgeEl.style.background = 'linear-gradient(135deg, #eab308, #f59e0b)';
+                } else if (correct >= 10) {
+                    badgeEl.textContent = '🥈 SILVER CODER';
+                    badgeEl.style.background = 'linear-gradient(135deg, #06b6d4, #3b82f6)';
+                } else {
+                    badgeEl.textContent = '🥉 BRONZE DEVELOPER';
+                    badgeEl.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+                }
+                
+                console.log('✅ Summary page loaded successfully');
+            } catch (error) {
+                console.error('Error loading summary data:', error);
             }
         }
 
