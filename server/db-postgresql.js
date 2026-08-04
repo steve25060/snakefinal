@@ -3,24 +3,40 @@ const path = require('path');
 
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-console.log('🔍 PostgreSQL Configuration:');
-console.log('  Host:', process.env.DB_HOST);
-console.log('  Port:', process.env.DB_PORT);
-console.log('  Database:', process.env.DB_NAME);
-console.log('  User:', process.env.DB_USER);
+const dbUrl = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
-// Create PostgreSQL connection pool with explicit options
-const pool = new Pool({
+console.log('🔍 PostgreSQL Configuration:');
+if (dbUrl) {
+  console.log('  Using DATABASE_URL connection string');
+} else {
+  console.log('  Host:', process.env.DB_HOST);
+  console.log('  Port:', process.env.DB_PORT);
+  console.log('  Database:', process.env.DB_NAME);
+  console.log('  User:', process.env.DB_USER);
+}
+
+// Create PostgreSQL connection pool with explicit options or connectionString
+const poolConfig = dbUrl ? {
+  connectionString: dbUrl,
+  ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
+  max: parseInt(process.env.DB_POOL_MAX || '50', 10),
+  min: parseInt(process.env.DB_POOL_MIN || '5', 10),
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
+} : {
   host: process.env.DB_HOST || '127.0.0.1',
   port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME || 'snake_mcq_game',
   user: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
+  ssl: (process.env.PGSSLMODE === 'require' || process.env.DB_SSL === 'true') ? { rejectUnauthorized: false } : false,
   max: parseInt(process.env.DB_POOL_MAX || '50', 10),
   min: parseInt(process.env.DB_POOL_MIN || '5', 10),
   idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
   connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
-});
+};
+
+const pool = new Pool(poolConfig);
 
 // Connection error handling
 pool.on('error', (err) => {
