@@ -227,4 +227,16 @@
     .game-value {
         font-size: 1.05rem;
     }
+
+    /* Mobile Leaderboard Table Styling */
+    .leaderboard-card {
+        padding: 12px 6px !important;
+        border-radius: 12px !important;
+    }
+
+    .leaderboard-table-styled th,
+    .leaderboard-table-styled td {
+        padding: 10px 8px !important;
+        font-size: 0.82rem !important;
+    }
 }

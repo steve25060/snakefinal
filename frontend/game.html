@@ -160,11 +160,16 @@
             }
         }
 
-        function isFullscreenActive() {
-            return !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+        function isMobileDevice() {
+            return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || (window.innerWidth <= 768);
         }
 
         function setupFullscreenEnforcement() {
+            if (isMobileDevice()) {
+                console.log('📱 Mobile device detected: Bypassing desktop fullscreen anti-cheat for mobile compatibility');
+                return;
+            }
+
             // Auto request fullscreen on any page click if not in fullscreen
             document.addEventListener('click', () => {
                 if (!isFullscreenActive() && !isGameTerminated) {
