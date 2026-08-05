@@ -124,7 +124,7 @@ server.listen(PORT, () => {
   ✅ Server running on: http://localhost:${PORT}
   🎮 Game URL: http://localhost:${PORT}
   📊 Admin panel: http://localhost:${PORT}/admin-login.html
-  💾 Database: SQLite (snake_mcq.db)
+  💾 Database: PostgreSQL (Neon)
 
   Ready to play! 🚀
   `);

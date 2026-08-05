@@ -58,7 +58,7 @@ router.post('/start', async (req, res) => {
 
     if (session) {
       await db.update(
-        "UPDATE game_sessions SET game_status = 'active', started_at = CURRENT_TIMESTAMP WHERE id = $1",
+        "UPDATE game_sessions SET game_status = 'active', started_at = COALESCE(started_at, CURRENT_TIMESTAMP) WHERE id = $1",
         [session.id]
       );
     } else {

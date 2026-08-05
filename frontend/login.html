@@ -129,6 +129,12 @@
                 if (response.success) {
                     console.log('✅ Login successful:', response.data);
                     
+                    // Clear any stale game state from a previous session
+                    localStorage.removeItem('gameStartTime');
+                    localStorage.removeItem('playerGameSummary');
+                    localStorage.removeItem('lastGameTotalTime');
+                    localStorage.removeItem('lastGameTotalSeconds');
+                    
                     // Auth.loginPlayer already stores everything, just redirect
                     console.log('🔄 Redirecting to language selection...');
                     

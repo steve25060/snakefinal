@@ -121,8 +121,17 @@ router.post('/login', async (req, res) => {
     const sessionToken = uuidv4();
 
     await db.update(
-      'UPDATE users SET session_token = $1, game_status = $2 WHERE id = $3',
-      [sessionToken, 'playing', user.id]
+      `UPDATE users SET 
+        session_token = $1, 
+        game_status = 'playing',
+        score = 0,
+        correct_answers = 0,
+        wrong_answers = 0,
+        skipped_answers = 0,
+        completed_at = NULL,
+        total_time_seconds = NULL
+       WHERE id = $2`,
+      [sessionToken, user.id]
     );
 
     // Check for existing active session

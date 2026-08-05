@@ -150,7 +150,8 @@
             if (realTimerInterval) clearInterval(realTimerInterval);
             
             let savedStart = localStorage.getItem('gameStartTime');
-            if (!savedStart || currentQuestion === 1) {
+            if (!savedStart) {
+                // Only set a new start time if there is genuinely no saved timestamp
                 gameStartTimestamp = Date.now();
                 localStorage.setItem('gameStartTime', String(gameStartTimestamp));
             } else {
