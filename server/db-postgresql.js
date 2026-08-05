@@ -164,15 +164,20 @@ async function initializeDatabase() {
       console.log('✅ Database schema already exists');
     }
 
-    // Seed questions if database has no questions
+    // Sync questions if database has no questions or if questions need updating to balanced A-D options
     const qCountRes = await pool.query('SELECT COUNT(*) as count FROM questions');
-    if (parseInt(qCountRes.rows[0]?.count || '0', 10) === 0) {
-      console.log('🌱 Seeding initial questions...');
+    const aOnlyRes = await pool.query("SELECT COUNT(*) as count FROM questions WHERE correct_option = 'A'");
+    const totalQ = parseInt(qCountRes.rows[0]?.count || '0', 10);
+    const totalA = parseInt(aOnlyRes.rows[0]?.count || '0', 10);
+
+    if (totalQ === 0 || (totalQ > 0 && totalA > 30)) {
+      console.log('🌱 Seeding/syncing balanced questions with randomized A, B, C, D correct options...');
       const seedSqlPath = path.join(__dirname, '../database/questions-complete.sql');
       if (fs.existsSync(seedSqlPath)) {
         const seedSql = fs.readFileSync(seedSqlPath, 'utf8');
+        await pool.query('TRUNCATE TABLE questions RESTART IDENTITY CASCADE;');
         await pool.query(seedSql);
-        console.log('✅ Questions seeded successfully');
+        console.log('✅ Questions seeded and synchronized successfully');
       }
     }
     
