@@ -170,15 +170,17 @@ async function initializeDatabase() {
     const totalQ = parseInt(qCountRes.rows[0]?.count || '0', 10);
     const totalA = parseInt(aOnlyRes.rows[0]?.count || '0', 10);
 
-    if (totalQ === 0 || (totalQ > 0 && totalA > 30)) {
-      console.log('🌱 Seeding/syncing balanced questions with randomized A, B, C, D correct options...');
+    if (totalQ === 0 || totalQ !== 40) {
+      console.log(`🌱 Seeding questions... (found ${totalQ}, expected 40)`);
       const seedSqlPath = path.join(__dirname, '../database/questions-complete.sql');
       if (fs.existsSync(seedSqlPath)) {
         const seedSql = fs.readFileSync(seedSqlPath, 'utf8');
         await pool.query('TRUNCATE TABLE questions RESTART IDENTITY CASCADE;');
         await pool.query(seedSql);
-        console.log('✅ Questions seeded and synchronized successfully');
+        console.log('✅ Questions seeded successfully (40 official questions loaded)');
       }
+    } else {
+      console.log(`✅ Questions OK: ${totalQ} questions in database`);
     }
     
     return true;
