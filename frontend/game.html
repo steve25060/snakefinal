@@ -105,12 +105,11 @@
     <script src="js/snake-simple.js?v=10.0"></script>
     <script>
         // Game constants
-        const READING_TIME = 20;      // 20 seconds to read question
-        const GAME_TIME = 30;         // 30 seconds to play snake game
-        
-        // Game state
-        var currentQuestion = 1;
-        var gameSession = null;
+        const READING_TIME = 20;
+        const GAME_TIME = 30;
+
+        // Game state - restore currentQuestion from localStorage on refresh
+        var currentQuestion = parseInt(localStorage.getItem('currentQuestion') || '1') || 1;
         var phaseTimer = null;
         var realTimerInterval = null;
         var gameStartTimestamp = null;
@@ -118,27 +117,62 @@
         var isReadingPhase = true;
         var currentGameData = null;
 
-        // Initialize game on page load
+        // =====================================================
+        // INIT - runs on page load (handles refresh recovery)
+        // =====================================================
         document.addEventListener('DOMContentLoaded', async () => {
             requireLogin();
-            
+
             try {
-                // Get selected language
                 const selectedLanguage = localStorage.getItem('selectedLanguage') || 'python';
                 document.getElementById('languageDisplay').textContent = selectedLanguage.toUpperCase();
 
-                // Get session token from localStorage
-                let sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN) || localStorage.getItem('sessionToken');
-                
-                // If no session exists, redirect back to login
+                const sessionToken = localStorage.getItem(STORAGE_KEYS.SESSION_TOKEN) || localStorage.getItem('sessionToken');
                 if (!sessionToken) {
-                    console.error('No session token found');
                     window.location.href = 'login.html';
                     return;
                 }
 
-                // Start reading phase for first question
+                // === REFRESH RECOVERY: sync state from server ===
+                try {
+                    const statsResp = await Game.getStats();
+                    if (statsResp && statsResp.data) {
+                        const s = statsResp.data;
+
+                        // Already completed? Redirect straight to summary
+                        if (s.status === 'completed') {
+                            console.log('✅ Game already completed, redirecting to summary...');
+                            window.location.href = 'summary.html';
+                            return;
+                        }
+
+                        // Restore score display
+                        document.getElementById('score').textContent = s.score || 0;
+
+                        // Sync question number from server answered count (authoritative)
+                        const answered = s.questionsAnswered || 0;
+                        if (answered > 0) {
+                            const serverNextQ = answered + 1;
+                            if (serverNextQ > currentQuestion) {
+                                currentQuestion = serverNextQ;
+                                localStorage.setItem('currentQuestion', String(currentQuestion));
+                            }
+                        }
+
+                        if (currentQuestion > 20) {
+                            window.location.href = 'summary.html';
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Could not restore stats on refresh, continuing with saved state:', e.message);
+                }
+
+                console.log(`▶️ Starting from question ${currentQuestion}/20`);
+                document.getElementById('questionNum').textContent = `${currentQuestion}/20`;
+
                 startReadingPhase();
+
             } catch (error) {
                 console.error('Game initialization error:', error);
                 alert('An error occurred while starting the game.');
@@ -146,18 +180,18 @@
             }
         });
 
+        // =====================================================
+        // REAL TIMER (persists across refresh via localStorage)
+        // =====================================================
         function startRealGameTimer() {
             if (realTimerInterval) clearInterval(realTimerInterval);
-            
-            let savedStart = localStorage.getItem('gameStartTime');
+            const savedStart = localStorage.getItem('gameStartTime');
             if (!savedStart) {
-                // Only set a new start time if there is genuinely no saved timestamp
                 gameStartTimestamp = Date.now();
                 localStorage.setItem('gameStartTime', String(gameStartTimestamp));
             } else {
                 gameStartTimestamp = parseInt(savedStart);
             }
-            
             updateRealTimerDisplay();
             realTimerInterval = setInterval(updateRealTimerDisplay, 1000);
         }
@@ -167,33 +201,27 @@
             const elapsedSecs = Math.max(0, Math.floor((Date.now() - gameStartTimestamp) / 1000));
             const mins = Math.floor(elapsedSecs / 60);
             const secs = elapsedSecs % 60;
-            const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            
-            const realTimerEl = document.getElementById('realTimer');
-            if (realTimerEl) {
-                realTimerEl.textContent = formatted;
-            }
+            const el = document.getElementById('realTimer');
+            if (el) el.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
         }
 
+        // =====================================================
+        // PHASE: READING
+        // =====================================================
         function startReadingPhase() {
             console.log('📖 Starting reading phase...');
             isReadingPhase = true;
             timeRemaining = READING_TIME;
-            
+
             startRealGameTimer();
-            
-            // Show question screen, hide others
+
             document.getElementById('questionScreen').classList.add('active');
             document.getElementById('gameScreen').classList.remove('active');
             document.getElementById('resultScreen').classList.remove('active');
-            
-            // HIDE controls on question screen
             document.getElementById('gameControls').style.display = 'none';
-            
-            // Load question
+
             loadQuestion();
-            
-            // Start countdown
+
             startPhaseTimer(READING_TIME, () => {
                 console.log('⏱️ Reading time ended, starting snake game...');
                 startGamePhase();
@@ -203,66 +231,49 @@
         async function loadQuestion() {
             try {
                 const selectedLanguage = localStorage.getItem('selectedLanguage') || 'python';
-                
                 console.log(`📥 Loading question ${currentQuestion}, language: ${selectedLanguage}`);
-                
+
                 let data;
                 try {
                     data = await Game.getQuestion(currentQuestion, selectedLanguage);
                 } catch (err) {
-                    console.warn('Initial getQuestion call failed, attempting session refresh:', err);
+                    console.warn('getQuestion failed, refreshing session:', err);
                     await Game.startGame();
                     data = await Game.getQuestion(currentQuestion, selectedLanguage);
                 }
 
-                console.log('API Response:', data);
-                
                 if (!data || !data.success || !data.data || !data.data.question) {
-                    throw new Error((data && data.error) || 'Invalid question response structure');
+                    throw new Error((data && data.error) || 'Invalid question response');
                 }
-                
+
                 const question = data.data.question;
                 currentGameData = question;
                 window.currentGameData = question;
-                
-                // Display question text and options in reading phase
-                const qText = question.text || 'No question text';
-                document.getElementById('questionText').textContent = qText;
-                
-                const optA = question.options?.A || '-';
-                const optB = question.options?.B || '-';
-                const optC = question.options?.C || '-';
-                const optD = question.options?.D || '-';
 
-                document.getElementById('optAText').textContent = optA;
-                document.getElementById('optBText').textContent = optB;
-                document.getElementById('optCText').textContent = optC;
-                document.getElementById('optDText').textContent = optD;
-                
+                document.getElementById('questionText').textContent = question.text || 'No question text';
+                document.getElementById('optAText').textContent = question.options?.A || '-';
+                document.getElementById('optBText').textContent = question.options?.B || '-';
+                document.getElementById('optCText').textContent = question.options?.C || '-';
+                document.getElementById('optDText').textContent = question.options?.D || '-';
                 document.getElementById('questionNum').textContent = `${currentQuestion}/20`;
-                
-                console.log('✓ Question loaded successfully');
-                
+
+                console.log('✓ Question loaded');
             } catch (error) {
                 console.error('❌ Error loading question:', error);
-                document.getElementById('questionText').textContent = 'Error: ' + error.message;
+                document.getElementById('questionText').textContent = 'Error loading question: ' + error.message;
             }
         }
 
+        // =====================================================
+        // PHASE TIMER
+        // =====================================================
         function startPhaseTimer(duration, onComplete) {
-            // Clear any existing timer
             if (phaseTimer) clearInterval(phaseTimer);
-            
             timeRemaining = duration;
-            
-            // Update display immediately
             updateTimerDisplay();
-            
-            // Start countdown
             phaseTimer = setInterval(() => {
                 timeRemaining--;
                 updateTimerDisplay();
-                
                 if (timeRemaining <= 0) {
                     clearInterval(phaseTimer);
                     phaseTimer = null;
@@ -277,98 +288,83 @@
         }
 
         function skipToGame() {
-            console.log('⏭️ User clicked NEXT, skipping to snake game...');
+            console.log('⏭️ Skipping to snake game...');
             if (phaseTimer) clearInterval(phaseTimer);
             startGamePhase();
         }
 
+        // =====================================================
+        // PHASE: SNAKE GAME
+        // =====================================================
         function startGamePhase() {
-            console.log('%c🎮 Starting snake game phase...', 'color: cyan; font-size: 14px; font-weight: bold');
+            console.log('%c🎮 Starting snake game...', 'color: cyan; font-weight: bold');
             isReadingPhase = false;
-            
-            // Hide question, show game
+
             document.getElementById('questionScreen').classList.remove('active');
             document.getElementById('gameScreen').classList.add('active');
             document.getElementById('resultScreen').classList.remove('active');
-            
-            // SHOW controls on game screen
             document.getElementById('gameControls').style.display = 'flex';
-            
-            // Ensure canvas is visible and accessible
-            const canvas = document.getElementById('gameCanvas');
-            if (!canvas) {
-                console.error('❌ Canvas element not found!');
+
+            if (!document.getElementById('gameCanvas')) {
+                console.error('❌ Canvas not found!');
                 return;
             }
-            console.log('✅ Canvas found:', canvas.width, 'x', canvas.height);
-            
-            // Initialize snake game
-            console.log('Calling initSnakeGame()...');
+
             setTimeout(() => {
                 if (typeof window.initSnakeGame === 'function') {
                     try {
                         window.initSnakeGame();
-                        console.log('✅ Snake game initialized successfully');
-                    } catch (error) {
-                        console.error('❌ Error initializing snake game:', error);
+                        console.log('✅ Snake game initialized');
+                    } catch (e) {
+                        console.error('❌ Snake init error:', e);
                     }
                 } else {
-                    console.error('❌ initSnakeGame function not found!');
-                    console.log('Available functions:', Object.keys(window).filter(k => k.includes('game') || k.includes('snake')));
+                    console.error('❌ initSnakeGame not found!');
                 }
             }, 100);
-            
-            // Start game timer (20 seconds)
+
             startPhaseTimer(GAME_TIME, () => {
-                console.log('⏱️ Game time ended, showing result...');
+                console.log('⏱️ Game time ended');
                 endSnakeGame();
             });
         }
 
-        function initializeSnakeGame() {
-            console.log('🎮 Initializing snake game...');
-            
-            try {
-                window.initializeSnakeGame();
-                console.log('✓ Snake game initialized');
-            } catch (error) {
-                console.error('Error initializing snake game:', error);
-            }
-        }
-
         function endSnakeGame() {
             console.log('🏁 Snake game ended');
-            
-            // Clear timer
             if (phaseTimer) clearInterval(phaseTimer);
-            
-            // Show result (no answer selected)
             showResult(false, 0);
         }
 
+        // =====================================================
+        // CONTROLS
+        // =====================================================
         function moveSnake(direction) {
             if (typeof window.moveSnakeByButton === 'function') {
                 window.moveSnakeByButton(direction);
-            } else if (typeof window.moveSnake === 'function' && window.moveSnake !== moveSnake) {
-                window.moveSnake(direction);
             }
         }
 
+        // =====================================================
+        // NEXT QUESTION / GAME COMPLETE
+        // =====================================================
         async function nextQuestion() {
             currentQuestion++;
-            
+
             if (currentQuestion > 20) {
+                // Game complete
                 console.log('🎉 Game completed!');
                 if (realTimerInterval) clearInterval(realTimerInterval);
-                const startTime = parseInt(localStorage.getItem('gameStartTime') || Date.now());
+
+                const startTime = parseInt(localStorage.getItem('gameStartTime') || String(Date.now()));
                 const totalSecs = Math.max(1, Math.round((Date.now() - startTime) / 1000));
                 const mins = Math.floor(totalSecs / 60);
-                const secs = Math.floor(totalSecs % 60);
+                const secs = totalSecs % 60;
                 const formattedTime = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-                
+
                 localStorage.setItem('lastGameTotalTime', formattedTime);
                 localStorage.setItem('lastGameTotalSeconds', String(totalSecs));
-                console.log(`⏱️ Total real game completion time: ${formattedTime} (${totalSecs}s)`);
+                localStorage.removeItem('currentQuestion'); // Clear so next game starts fresh
+                console.log(`⏱️ Total game time: ${formattedTime} (${totalSecs}s)`);
 
                 try {
                     const res = await Game.completeGame(totalSecs);
@@ -379,37 +375,37 @@
                     console.error('Complete game error:', e);
                 }
                 window.location.href = 'summary.html';
+
             } else {
                 console.log(`📖 Moving to question ${currentQuestion}...`);
-                
-                // Clear timer
+                // Persist so browser refresh resumes at this question
+                localStorage.setItem('currentQuestion', String(currentQuestion));
                 if (phaseTimer) clearInterval(phaseTimer);
-                
-                // Start next reading phase
                 startReadingPhase();
             }
         }
 
+        // =====================================================
+        // RESULT SCREEN
+        // =====================================================
         function showResult(isCorrect, points) {
-            console.log(`Result: ${isCorrect ? '✓ CORRECT' : '✗ WRONG'} (${points} points)`);
-            
-            // Hide other screens
+            console.log(`Result: ${isCorrect ? '✓ CORRECT' : '✗ WRONG'} (+${points} pts)`);
+
             document.getElementById('questionScreen').classList.remove('active');
             document.getElementById('gameScreen').classList.remove('active');
             document.getElementById('resultScreen').classList.add('active');
-            
-            // Show result
-            const messageEl = document.getElementById('resultMessage');
-            const pointsEl = document.getElementById('resultPoints');
-            
+
+            const msgEl = document.getElementById('resultMessage');
+            const ptEl = document.getElementById('resultPoints');
+
             if (isCorrect) {
-                messageEl.textContent = '✓ CORRECT!';
-                messageEl.style.color = '#34d399';
-                pointsEl.textContent = `+${points} Points`;
+                msgEl.textContent = '✓ CORRECT!';
+                msgEl.style.color = '#34d399';
+                ptEl.textContent = `+${points} Points`;
             } else {
-                messageEl.textContent = '✗ WRONG';
-                messageEl.style.color = '#ef4444';
-                pointsEl.textContent = '+0 Points';
+                msgEl.textContent = '✗ WRONG';
+                msgEl.style.color = '#ef4444';
+                ptEl.textContent = '+0 Points';
             }
         }
     </script>
