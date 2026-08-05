@@ -333,15 +333,25 @@ router.post('/answer', async (req, res) => {
             id, name, class, roll_number, score, correct_answers, wrong_answers, 
             skipped_answers, total_time_seconds, completed_at, game_status
            FROM users 
-           ORDER BY score DESC, completed_at ASC LIMIT 100`
+           ORDER BY score DESC, COALESCE(total_time_seconds, 999999) ASC, completed_at ASC NULLS LAST LIMIT 100`
         );
         
-        const leaderboardData = topPlayers.map((player, index) => ({
-          ...player,
-          rollNumber: player.roll_number,
-          rank: index + 1,
-          medal: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : ''
-        }));
+        const leaderboardData = topPlayers.map((player, index) => {
+          const secs = player.total_time_seconds;
+          let displayTime = 'N/A';
+          if (secs && !isNaN(secs) && secs > 0) {
+            const m = Math.floor(secs / 60);
+            const s = Math.floor(secs % 60);
+            displayTime = m > 0 ? `${m}m ${s}s` : `${s}s`;
+          }
+          return {
+            ...player,
+            rollNumber: player.roll_number,
+            rank: index + 1,
+            medal: index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '',
+            formatted_time: displayTime
+          };
+        });
         
         io.emit('leaderboard-updated', leaderboardData);
       }

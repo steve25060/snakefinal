@@ -18,7 +18,7 @@ const getLeaderboardHandler = async (req, res) => {
     let limit = req.params.limit || req.query.limit || 100;
     limit = parseInt(limit) || 100;
 
-    // Get players ordered by score
+    // Get players - prioritise u.total_time_seconds (server-saved authoritative value)
     const leaderboard = await db.getAll(
       `SELECT 
         u.id,
@@ -33,19 +33,25 @@ const getLeaderboardHandler = async (req, res) => {
         u.completed_at,
         u.created_at,
         COALESCE(
+          u.total_time_seconds,
           (
-            SELECT CAST(EXTRACT(EPOCH FROM (gs.completed_at - gs.started_at)) AS INTEGER)
+            SELECT CAST(EXTRACT(EPOCH FROM (COALESCE(gs.completed_at, CURRENT_TIMESTAMP) - gs.started_at)) AS INTEGER)
             FROM game_sessions gs
-            WHERE gs.user_id = u.id AND gs.completed_at IS NOT NULL
-            ORDER BY gs.completed_at DESC LIMIT 1
-          ),
-          (
-            SELECT CAST(EXTRACT(EPOCH FROM (COALESCE(u.completed_at, CURRENT_TIMESTAMP) - u.created_at)) AS INTEGER)
+            WHERE gs.user_id = u.id
+            ORDER BY gs.id DESC LIMIT 1
           )
         ) AS total_time_seconds,
-        ROW_NUMBER() OVER (ORDER BY u.score DESC, u.completed_at ASC) as rank
+        ROW_NUMBER() OVER (
+          ORDER BY 
+            u.score DESC,
+            COALESCE(u.total_time_seconds, 999999) ASC,
+            u.completed_at ASC NULLS LAST
+        ) as rank
        FROM users u
-       ORDER BY u.score DESC, u.completed_at ASC
+       ORDER BY 
+         u.score DESC,
+         COALESCE(u.total_time_seconds, 999999) ASC,
+         u.completed_at ASC NULLS LAST
        LIMIT $1`,
       [limit]
     );
