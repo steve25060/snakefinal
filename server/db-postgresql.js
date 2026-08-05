@@ -170,11 +170,10 @@ async function initializeDatabase() {
     const totalQ = parseInt(qCountRes.rows[0]?.count || '0', 10);
     const totalA = parseInt(aOnlyRes.rows[0]?.count || '0', 10);
 
-    console.log('🌱 Forcing reseed of 40 official questions from questions-complete.sql...');
+    console.log('🌱 Reseeding 40 official questions from questions-complete.sql...');
     const seedSqlPath = path.join(__dirname, '../database/questions-complete.sql');
     if (fs.existsSync(seedSqlPath)) {
       const seedSql = fs.readFileSync(seedSqlPath, 'utf8');
-      await pool.query('TRUNCATE TABLE questions RESTART IDENTITY CASCADE;');
       await pool.query(seedSql);
       console.log('✅ 40 Official questions successfully loaded into database');
     }
