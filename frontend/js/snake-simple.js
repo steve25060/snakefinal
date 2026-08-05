@@ -432,16 +432,14 @@ function update() {
     snake.pop();
 }
 
-// Game loop - Speed increases gradually with each question
+// Game loop - Constant comfortable speed throughout all questions (same as Question 1)
 function startLoop() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
     
-    // Smooth continuous speed progression across all 20 questions
-    const initialSpeed = 250; // Q1 comfortable speed
-    const speedDecrease = 9;  // Reduces by 9ms per question
-    const speed = Math.max(initialSpeed - (currentQuestion - 1) * speedDecrease, 65); // Continuous speed boost
+    // Constant speed for all questions (250ms per update)
+    const speed = BASE_SPEED;
     
-    console.log(`⚡ Game speed: ${speed}ms per update (Question ${currentQuestion}/20)`);
+    console.log(`⚡ Game speed: ${speed}ms per update (Constant speed across all questions)`);
     
     gameLoopInterval = setInterval(() => {
         update();

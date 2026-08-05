@@ -395,12 +395,47 @@ router.get('/players', getPlayersHandler);
 router.get('/participants', getPlayersHandler);
 
 /**
+ * DELETE /api/admin/players/all
+ * Clear/Delete ALL players
+ */
+router.delete(['/players/all', '/players-all', '/clear-players'], async (req, res) => {
+  try {
+    await db.runQuery('TRUNCATE TABLE users, game_sessions, player_answers RESTART IDENTITY CASCADE;');
+
+    try {
+      const io = req.app.get('io');
+      if (io) {
+        io.emit('leaderboard-updated', []);
+        io.emit('leaderboard-data', []);
+        io.emit('player-deleted', { all: true });
+      }
+    } catch (e) {}
+
+    res.json({
+      success: true,
+      message: 'All players and game sessions cleared successfully'
+    });
+  } catch (error) {
+    console.error('Delete all players error:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to delete all players' 
+    });
+  }
+});
+
+/**
  * DELETE /api/admin/players/:id
  * Delete a player
  */
 router.delete('/players/:id', async (req, res) => {
   try {
     const { id } = req.params;
+
+    if (id === 'all' || id === 'clear') {
+      await db.runQuery('TRUNCATE TABLE users, game_sessions, player_answers RESTART IDENTITY CASCADE;');
+      return res.json({ success: true, message: 'All players cleared successfully' });
+    }
 
     const existing = await db.getOne('SELECT id FROM users WHERE id = $1', [id]);
 

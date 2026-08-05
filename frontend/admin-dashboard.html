@@ -101,6 +101,7 @@
             class="search-input"
           >
           <button onclick="refreshParticipants()" class="btn btn-secondary btn-small">🔄 Refresh</button>
+          <button onclick="deleteAllPlayers()" class="btn btn-small" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; font-weight: 700; cursor: pointer;">🗑️ Delete All Players</button>
         </div>
 
         <div id="participantsContainer" class="participants-container">
@@ -628,6 +629,23 @@ Started At: ${p.started_at ? new Date(p.started_at).toLocaleString() : '-'}`);
           if (response.success) {
             alert('Question deleted!');
             await loadAdminQuestions();
+          }
+        } catch (error) {
+          alert('Error: ' + error.message);
+        }
+      }
+    }
+
+    async function deleteAllPlayers() {
+      if (confirm('⚠️ WARNING: Are you SURE you want to delete ALL players, clear all sessions, and reset the leaderboard to 0? This cannot be undone!')) {
+        try {
+          const response = await apiCall('/api/admin/players/all', 'DELETE');
+          if (response.success) {
+            alert('All players and leaderboard data cleared successfully!');
+            adminStatsCache.data = null;
+            await loadDashboardStats();
+            await loadAdminParticipants();
+            await loadAdminLeaderboard(adminData.currentLeaderboardFilter || 'top10');
           }
         } catch (error) {
           alert('Error: ' + error.message);
