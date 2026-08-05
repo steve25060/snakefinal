@@ -1,60 +1,378 @@
--- Comprehensive Questions for Snake MCQ Challenge
--- 20 Python questions and 20 C questions with well-balanced options A, B, C, D
+-- ================================================================
+-- SNAKE MCQ CHALLENGE - Official Questions (User Provided)
+-- 20 Python + 20 C Programming Questions
+-- Correct options are RANDOMIZED across A/B/C/D (5 each per language)
+-- Python correct: A=Q1,5,9,13,17 | B=Q2,6,10,14,18 | C=Q3,7,11,15,19 | D=Q4,8,12,16,20
+-- C correct:      A=Q1,5,9,13,17 | B=Q2,6,10,14,18 | C=Q3,7,11,15,19 | D=Q4,8,12,16,20
+-- ================================================================
 
 -- ============================================
 -- PYTHON QUESTIONS (20)
 -- ============================================
 
 INSERT INTO questions (language, question_text, option_a, option_b, option_c, option_d, correct_option, difficulty_level) VALUES
-('python', 'Which keyword is used to define a function in Python?', 'func', 'def', 'function', 'define', 'B', 'easy'),
-('python', 'What is the output of: print(2 ** 3)?', '6', '8', '9', '23', 'B', 'easy'),
-('python', 'How do you create a list in Python?', 'list = ()', 'list = {}', 'list = []', 'list = <>', 'C', 'easy'),
-('python', 'Which method is used to add an element to the end of a list?', 'add()', 'insert()', 'push()', 'append()', 'D', 'easy'),
-('python', 'What is the correct file extension for Python files?', '.python', '.py', '.pt', '.pyt', 'B', 'easy'),
+-- Q1: correct → A
+('python',
+'Which statement about Python lists is correct?',
+'Lists are ordered and mutable',
+'Lists cannot contain duplicate values',
+'Lists are immutable',
+'Lists can contain only one data type',
+'A', 'medium'),
 
-('python', 'What does len() function return?', 'Type of object', 'Value of object', 'Length of object', 'Size in bytes', 'C', 'medium'),
-('python', 'Which of the following is mutable in Python?', 'Tuple', 'List', 'String', 'Integer', 'B', 'medium'),
-('python', 'What is the output of: print(type([]))?', '<class list>', '<class array>', '<class tuple>', '<class dict>', 'A', 'medium'),
-('python', 'How do you start a for loop in Python?', 'for (i=0; i<5; i++)', 'foreach i in 5:', 'for i in range(5):', 'loop i to 5:', 'C', 'medium'),
-('python', 'What does the // operator do in Python?', 'Exponentiation', 'Modulus', 'Regular division', 'Floor division', 'D', 'medium'),
+-- Q2: correct → B
+('python',
+'What does *args allow a Python function to receive?',
+'Only keyword arguments',
+'A variable number of positional arguments',
+'Exactly two arguments',
+'Only integer arguments',
+'B', 'medium'),
 
-('python', 'Which keyword is used for exception handling?', 'try', 'catch', 'except', 'Both A and C', 'D', 'medium'),
-('python', 'What is a lambda function in Python?', 'Anonymous function', 'Named function', 'Built-in function', 'Class method', 'A', 'medium'),
-('python', 'How do you create a dictionary in Python?', 'dict = []', 'dict = {}', 'dict = ()', 'dict = <>', 'B', 'easy'),
-('python', 'What is the output of: print(bool(0))?', 'True', 'False', '0', 'None', 'B', 'easy'),
-('python', 'Which method converts a string to lowercase?', 'lowercase()', 'toLower()', 'lower()', 'downcase()', 'C', 'easy'),
+-- Q3: correct → C
+('python',
+'Which data structure stores values as key-value pairs?',
+'List',
+'Tuple',
+'Dictionary',
+'Set',
+'C', 'easy'),
 
-('python', 'What does the self parameter represent in a class?', 'Class itself', 'Instance of class', 'Parent class', 'Method name', 'B', 'medium'),
-('python', 'How do you import a module in Python?', 'import module_name', 'include module_name', 'require module_name', 'using module_name', 'A', 'easy'),
-('python', 'What is the output of: print(3 * "A")?', '3A', 'A3', 'AAA', 'Error', 'C', 'medium'),
-('python', 'Which function is used to get input from user?', 'scanf()', 'get()', 'read()', 'input()', 'D', 'easy'),
-('python', 'What is a tuple in Python?', 'Immutable sequence', 'Mutable sequence', 'Key-value pairs', 'Ordered set', 'A', 'medium');
+-- Q4: correct → D
+('python',
+E'What is the output?\n\nx = [10, 20, 30, 40]\nprint(x[-2])',
+'20',
+'40',
+'Error',
+'30',
+'D', 'medium'),
+
+-- Q5: correct → A
+('python',
+E'What is the output?\n\ntext = "Python"\nprint(text[1:5])',
+'ytho',
+'Pyth',
+'ython',
+'tho',
+'A', 'medium'),
+
+-- Q6: correct → B
+('python',
+E'What is the output?\n\nclass Parent:\n    def show(self):\n        return "Parent"\n\nclass Child(Parent):\n    def show(self):\n        return "Child"\n\nobj = Child()\nprint(obj.show())',
+'Parent',
+'Child',
+'Parent Child',
+'Error',
+'B', 'medium'),
+
+-- Q7: correct → C
+('python',
+E'What is the output?\n\nx = {1, 2, 3}\ny = {2, 3, 4}\nprint(x & y)',
+'{1, 4}',
+'{1, 2, 3, 4}',
+'{2, 3}',
+'{1, 2}',
+'C', 'medium'),
+
+-- Q8: correct → D
+('python',
+'What does **kwargs allow in a function?',
+'Variable number of positional arguments',
+'Only dictionary arguments',
+'Only two arguments',
+'Variable number of keyword arguments',
+'D', 'medium'),
+
+-- Q9: correct → A
+('python',
+'Which method removes and returns the last element of a list by default?',
+'pop()',
+'remove()',
+'delete()',
+'clear()',
+'A', 'easy'),
+
+-- Q10: correct → B
+('python',
+'What does the pass statement do?',
+'Terminates the program',
+'Acts as a placeholder and performs no action',
+'Skips the entire loop',
+'Returns None from a function immediately',
+'B', 'easy'),
+
+-- Q11: correct → C
+('python',
+E'What is the output?\n\nnumbers = [10, 20, 30, 40, 50]\nprint(numbers[::2])',
+'[10, 20]',
+'[20, 40]',
+'[10, 30, 50]',
+'[10, 20, 30]',
+'C', 'medium'),
+
+-- Q12: correct → D
+('python',
+'Which built-in function returns the number of items in a list, tuple, string, or dictionary?',
+'count()',
+'size()',
+'length()',
+'len()',
+'D', 'easy'),
+
+-- Q13: correct → A
+('python',
+'What does the enumerate() function provide when iterating over a sequence?',
+'Index-value pairs',
+'Only the values',
+'Only the indexes',
+'Sorted values',
+'A', 'medium'),
+
+-- Q14: correct → B
+('python',
+'Which statement about strings in Python is correct?',
+'Strings are mutable',
+'Strings are immutable',
+'Strings cannot contain numbers',
+'Strings cannot be indexed',
+'B', 'easy'),
+
+-- Q15: correct → C
+('python',
+'Which keyword is used to manually trigger an exception?',
+'throw',
+'except',
+'raise',
+'error',
+'C', 'medium'),
+
+-- Q16: correct → D
+('python',
+'What is serialization?',
+'Arranging numbers in ascending order',
+'Converting strings into integers',
+'Executing statements sequentially',
+'Converting data into a format suitable for storage or transmission',
+'D', 'medium'),
+
+-- Q17: correct → A
+('python',
+'What does eval() do?',
+'Evaluates a Python expression from a string or compiled code object',
+'Checks a program for syntax errors only',
+'Executes only functions',
+'Converts expressions into comments',
+'A', 'hard'),
+
+-- Q18: correct → B
+('python',
+'What is the output of bool([])?',
+'True',
+'False',
+'None',
+'Error',
+'B', 'medium'),
+
+-- Q19: correct → C
+('python',
+'What statement is used to handle exceptions in Python?',
+'try...catch',
+'do...except',
+'try...except',
+'try...finally only',
+'C', 'easy'),
+
+-- Q20: correct → D
+('python',
+'What does the __init__ method do in a Python class?',
+'Destroys an object instance',
+'Converts a class into a module',
+'Compiles the code to bytecode',
+'Acts as the class constructor to initialize object attributes',
+'D', 'medium');
+
 
 -- ============================================
 -- C PROGRAMMING QUESTIONS (20)
 -- ============================================
 
 INSERT INTO questions (language, question_text, option_a, option_b, option_c, option_d, correct_option, difficulty_level) VALUES
-('c', 'Which header file is required for printf()?', 'stdlib.h', 'stdio.h', 'string.h', 'math.h', 'B', 'easy'),
-('c', 'What is the size of int in C (typically)?', '1 byte', '2 or 4 bytes', '8 bytes', '16 bytes', 'B', 'medium'),
-('c', 'Which symbol is used for single-line comments in C?', '/*', '#', '//', '--', 'C', 'easy'),
-('c', 'What does the & operator do in scanf()?', 'Address-of operator', 'Bitwise AND', 'Logical AND', 'Pointer operator', 'A', 'medium'),
-('c', 'Which function is used to allocate memory dynamically?', 'alloc()', 'new()', 'malloc()', 'create()', 'C', 'medium'),
+-- C Q1: correct → A
+('c',
+'Which format specifier is used to print an integer value in C using printf()?',
+'%d',
+'%f',
+'%c',
+'%s',
+'A', 'easy'),
 
-('c', 'What is the correct syntax to declare a pointer?', 'int ptr*;', 'int *ptr;', 'pointer int ptr;', 'int ptr&;', 'B', 'medium'),
-('c', 'Which loop always executes at least once?', 'while', 'for', 'do-while', 'foreach', 'C', 'medium'),
-('c', 'What does NULL represent in C?', 'Null pointer', 'Zero value', 'Empty string', 'Undefined', 'A', 'medium'),
-('c', 'Which operator is used to access structure members?', '->', '.', '::', '~', 'B', 'easy'),
-('c', 'What is the return type of main() function?', 'void', 'char', 'int', 'float', 'C', 'easy'),
+-- C Q2: correct → B
+('c',
+E'How many times will "Hello" be printed by this for loop?\n\nfor (int i = 0; i < 3; i++) {\n    printf("Hello ");\n}',
+'2 times',
+'3 times',
+'4 times',
+'Infinite times',
+'B', 'easy'),
 
-('c', 'Which function is used to copy strings?', 'copy()', 'strcpy()', 'strcat()', 'strdup()', 'B', 'medium'),
-('c', 'What does sizeof() operator return?', 'Size in bytes', 'Number of elements', 'Memory address', 'Type of variable', 'A', 'medium'),
-('c', 'Which keyword is used to prevent variable modification?', 'final', 'readonly', 'const', 'static', 'C', 'medium'),
-('c', 'What is an array in C?', 'Collection of same type', 'Collection of any type', 'Linked data structure', 'Tree structure', 'A', 'easy'),
-('c', 'Which operator has highest precedence?', '*', '()', '+', '==', 'B', 'medium'),
+-- C Q3: correct → C
+('c',
+'What does the return 0; statement at the end of main() signify?',
+'The program failed with an error.',
+'The program should restart from the beginning.',
+'The program executed successfully.',
+'It clears all variables from memory.',
+'C', 'easy'),
 
-('c', 'What does the break statement do?', 'Skip iteration', 'Return value', 'Exit from loop', 'Pause execution', 'C', 'easy'),
-('c', 'Which header file is needed for sqrt()?', 'stdio.h', 'math.h', 'stdlib.h', 'cmath.h', 'B', 'easy'),
-('c', 'What is the output of: printf("%d", 5/2);?', '2.5', '2', '3', '5', 'B', 'medium'),
-('c', 'Which storage class has global scope?', 'extern', 'auto', 'register', 'static', 'A', 'medium'),
-('c', 'What does the continue statement do?', 'Exit loop', 'Return from function', 'Skip to next iteration', 'Pause execution', 'C', 'easy');
+-- C Q4: correct → D
+('c',
+'Which character automatically marks the end of a string in C?',
+'\\n (Newline)',
+'\\t (Tab)',
+'. (Period)',
+'\\0 (Null character)',
+'D', 'medium'),
+
+-- C Q5: correct → A
+('c',
+E'What will be the output of this C code?\n\n#include <stdio.h>\nint main() {\n    int x = 100;\n    int *ptr = &x;\n    printf("%d", *ptr);\n    return 0;\n}',
+'100',
+'Memory address of x',
+'0',
+'Compile error',
+'A', 'medium'),
+
+-- C Q6: correct → B
+('c',
+E'What will be printed by this program?\n\n#include <stdio.h>\nvoid changeValue(int num) {\n    num = 50;\n}\nint main() {\n    int a = 10;\n    changeValue(a);\n    printf("%d", a);\n    return 0;\n}',
+'50',
+'10',
+'0',
+'Garbage value',
+'B', 'medium'),
+
+-- C Q7: correct → C
+('c',
+'Which keyword is used to group variables of different data types under a single name?',
+'union',
+'enum',
+'struct',
+'group',
+'C', 'medium'),
+
+-- C Q8: correct → D
+('c',
+'A variable declared inside a function is known as a:',
+'Global variable',
+'Static variable',
+'External variable',
+'Local variable',
+'D', 'easy'),
+
+-- C Q9: correct → A
+('c',
+'Which data type is NOT allowed as a condition inside a standard switch() statement in C?',
+'float',
+'int',
+'char',
+'enum',
+'A', 'medium'),
+
+-- C Q10: correct → B
+('c',
+'Which mode string should be passed to fopen() to open an existing text file for reading only?',
+'"w"',
+'"r"',
+'"a"',
+'"wb"',
+'B', 'easy'),
+
+-- C Q11: correct → C
+('c',
+'What distinguishes a do-while loop from a standard while loop in C?',
+'A do-while loop cannot use the break statement.',
+'A do-while loop evaluates its condition before running the loop body.',
+'A do-while loop is guaranteed to execute its code block at least once.',
+'A do-while loop only works with integer conditions.',
+'C', 'medium'),
+
+-- C Q12: correct → D
+('c',
+'What does declaring a function with a void return type indicate?',
+'The function returns an integer value of 0.',
+'The function takes no input parameters.',
+'The function can return any variable data type dynamically.',
+'The function does not return any value to the caller.',
+'D', 'medium'),
+
+-- C Q13: correct → A
+('c',
+E'What will be the output of sizeof(struct Point)?\n\n#include <stdio.h>\nstruct Point {\n    int x;\n    int y;\n};\nint main() {\n    printf("%zu", sizeof(struct Point));\n    return 0;\n}',
+'8',
+'2',
+'4',
+'16',
+'A', 'hard'),
+
+-- C Q14: correct → B
+('c',
+'How much memory does a char variable occupy?',
+'2 Bytes',
+'1 Byte',
+'4 Bytes',
+'8 Bytes',
+'B', 'easy'),
+
+-- C Q15: correct → C
+('c',
+'Which operator gets the memory address of a variable?',
+'*',
+'%',
+'&',
+'#',
+'C', 'easy'),
+
+-- C Q16: correct → D
+('c',
+'If x = 5, what is the value of ++x?',
+'5',
+'4',
+'0',
+'6',
+'D', 'easy'),
+
+-- C Q17: correct → A
+('c',
+'Which standard library function is used to dynamically allocate memory in C?',
+'malloc()',
+'alloc()',
+'new()',
+'create()',
+'A', 'medium'),
+
+-- C Q18: correct → B
+('c',
+'Which keyword is used to prevent a variable''s value from being modified after initialization?',
+'static',
+'const',
+'volatile',
+'fixed',
+'B', 'medium'),
+
+-- C Q19: correct → C
+('c',
+'Which keyword gives an existing data type a new name?',
+'struct',
+'enum',
+'typedef',
+'alias',
+'C', 'medium'),
+
+-- C Q20: correct → D
+('c',
+'Which function is the entry point of every C program?',
+'start()',
+'begin()',
+'run()',
+'main()',
+'D', 'easy');
