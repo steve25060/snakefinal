@@ -173,13 +173,13 @@ function draw() {
             const py = item.y * GRID_SIZE;
             const cx = px + GRID_SIZE / 2;
             const cy = py + GRID_SIZE / 2;
-            const radius = (GRID_SIZE / 2) - 1.5;
+            const radius = (GRID_SIZE / 2) + 1.5;
 
             ctx.save();
 
             // 1. Intense Outer Neon Glow Aura
             ctx.shadowColor = item.color;
-            ctx.shadowBlur = 18;
+            ctx.shadowBlur = 22;
 
             // 2. High-Contrast Dark Sci-Fi Badge Core (#080e1e)
             ctx.fillStyle = '#080e1e';
@@ -188,22 +188,22 @@ function draw() {
             ctx.fill();
 
             // 3. Thick Vivid Neon Border
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 12;
             ctx.strokeStyle = item.color;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 3.5;
             ctx.stroke();
 
             // 4. Inner White Accent Ring for Sharp Separation
             ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
-            ctx.arc(cx, cy, radius - 2.5, 0, Math.PI * 2);
+            ctx.arc(cx, cy, radius - 3, 0, Math.PI * 2);
             ctx.stroke();
 
             // 5. Large Bold Crystal-Clear White Letter (A, B, C, D)
             ctx.fillStyle = '#ffffff';
-            ctx.font = '900 16px Inter, system-ui, Arial, sans-serif';
+            ctx.font = '900 19px Inter, system-ui, Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             

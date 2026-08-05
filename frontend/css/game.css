@@ -224,72 +224,73 @@
 
 .game-options-legend {
     width: 100%;
-    max-width: 620px;
+    max-width: 680px;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 14px;
+    gap: 16px;
+    margin-top: 18px;
 }
 
 .legend-card {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 14px;
-    border-radius: 10px;
-    background: rgba(15, 23, 42, 0.9);
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.95);
     border: 2px solid transparent;
     transition: all 0.2s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
 .legend-card.option-a {
     border-color: #ef4444;
-    background: rgba(239, 68, 68, 0.12);
+    background: rgba(239, 68, 68, 0.18);
 }
 
 .legend-card.option-b {
-    border-color: #06b6d4;
-    background: rgba(6, 182, 212, 0.12);
+    border-color: #38bdf8;
+    background: rgba(56, 189, 248, 0.18);
 }
 
 .legend-card.option-c {
-    border-color: #eab308;
-    background: rgba(234, 179, 8, 0.12);
+    border-color: #facc15;
+    background: rgba(250, 204, 21, 0.18);
 }
 
 .legend-card.option-d {
-    border-color: #a855f7;
-    background: rgba(168, 85, 247, 0.12);
+    border-color: #c084fc;
+    background: rgba(192, 132, 252, 0.18);
 }
 
 .legend-badge {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: var(--font-display);
     font-weight: 900;
-    font-size: 1.1rem;
+    font-size: 1.35rem;
     flex-shrink: 0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    border: 2px solid #ffffff;
 }
 
 .option-a .legend-badge { background: #ef4444; color: #ffffff; }
 .option-b .legend-badge { background: #38bdf8; color: #000000; }
 .option-c .legend-badge { background: #facc15; color: #000000; }
-.option-d .legend-badge { background: #ec4899; color: #ffffff; }
+.option-d .legend-badge { background: #c084fc; color: #ffffff; }
 
 .legend-text {
     color: #ffffff;
-    font-size: 1rem;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 1.18rem;
+    font-weight: 800;
+    line-height: 1.4;
+    word-break: break-word;
     flex: 1;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 /* Result Overlay Screen */
