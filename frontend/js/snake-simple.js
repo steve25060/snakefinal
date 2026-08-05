@@ -95,10 +95,10 @@ function placeFood() {
     food = [];
     
     const optionsData = [
-        { label: 'A', color: '#ef4444', textColor: '#ffffff' }, // Crimson Red
-        { label: 'B', color: '#38bdf8', textColor: '#ffffff' }, // Electric Blue
-        { label: 'C', color: '#facc15', textColor: '#000000' }, // Vibrant Gold Yellow
-        { label: 'D', color: '#ec4899', textColor: '#ffffff' }  // Neon Magenta
+        { label: 'A', color: '#ef4444', textColor: '#ffffff' }, // Vibrant Red
+        { label: 'B', color: '#38bdf8', textColor: '#ffffff' }, // Electric Cyan
+        { label: 'C', color: '#facc15', textColor: '#ffffff' }, // Gold Yellow
+        { label: 'D', color: '#c084fc', textColor: '#ffffff' }  // Neon Purple
     ];
 
     // Track occupied grid cells to prevent overlaps
@@ -166,41 +166,50 @@ function draw() {
     ctx.strokeRect(7, 7, CANVAS_SIZE - 14, CANVAS_SIZE - 14);
     ctx.restore();
 
-    // 3. Draw Food Options (A, B, C, D) - ULTRA HIGH-CONTRAST BADGES
+    // 3. Draw Food Options (A, B, C, D) - ULTRA HIGH-CONTRAST SCI-FI BADGES
     if (Array.isArray(food) && food.length > 0) {
         food.forEach(item => {
             const px = item.x * GRID_SIZE;
             const py = item.y * GRID_SIZE;
             const cx = px + GRID_SIZE / 2;
             const cy = py + GRID_SIZE / 2;
+            const radius = (GRID_SIZE / 2) - 1.5;
 
             ctx.save();
 
-            // Intense Neon Glow Aura around Badge
+            // 1. Intense Outer Neon Glow Aura
             ctx.shadowColor = item.color;
-            ctx.shadowBlur = 22;
+            ctx.shadowBlur = 18;
 
-            // Vibrant Solid Food Badge Background
-            ctx.fillStyle = item.color;
+            // 2. High-Contrast Dark Sci-Fi Badge Core (#080e1e)
+            ctx.fillStyle = '#080e1e';
             ctx.beginPath();
-            ctx.roundRect(px + 1, py + 1, GRID_SIZE - 2, GRID_SIZE - 2, 8);
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
             ctx.fill();
 
-            // Thick Solid White Border for Extreme Sharp Contrast
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 2.5;
+            // 3. Thick Vivid Neon Border
+            ctx.shadowBlur = 10;
+            ctx.strokeStyle = item.color;
+            ctx.lineWidth = 3;
             ctx.stroke();
 
-            // Large Bold Letter (A, B, C, D)
-            ctx.fillStyle = item.textColor;
-            ctx.font = '900 22px Orbitron, Outfit, sans-serif';
+            // 4. Inner White Accent Ring for Sharp Separation
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius - 2.5, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // 5. Large Bold Crystal-Clear White Letter (A, B, C, D)
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '900 16px Inter, system-ui, Arial, sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Text Shadow for crystal clear readability
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
-            ctx.shadowBlur = 5;
+            // Drop Shadow on Text for 100% Readability
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+            ctx.shadowBlur = 4;
             ctx.fillText(item.label, cx, cy + 1);
 
             ctx.restore();
