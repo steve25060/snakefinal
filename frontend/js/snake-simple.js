@@ -216,184 +216,168 @@ function draw() {
         });
     }
 
-    // 4. Draw Ultra-Premium Glowing Cyber Serpent Snake
+    // 4. DRAW CLEAN, CRISP, SOLID SNAKE GRAPHICS (NO LIGHTING BLUR / NO SHADOW EFFECTS)
     if (Array.isArray(snake) && snake.length > 0) {
         const total = snake.length;
 
-        // PASS A: Soft Ambient Occlusion Floor Shadow under the snake
-        ctx.save();
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.75)';
-        ctx.shadowBlur = 14;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 5;
-        ctx.fillStyle = '#000000';
+        // Calculate smooth sub-pixel positions for 60 FPS silky smooth movement
+        const renderPoints = snake.map((seg) => {
+            const targetX = seg.x * GRID_SIZE + GRID_SIZE / 2;
+            const targetY = seg.y * GRID_SIZE + GRID_SIZE / 2;
+            if (seg.renderX === undefined) seg.renderX = targetX;
+            if (seg.renderY === undefined) seg.renderY = targetY;
 
-        snake.forEach((seg) => {
-            const cx = seg.x * GRID_SIZE + GRID_SIZE / 2;
-            const cy = seg.y * GRID_SIZE + GRID_SIZE / 2;
-            ctx.beginPath();
-            ctx.arc(cx, cy, (GRID_SIZE / 2) - 1, 0, Math.PI * 2);
-            ctx.fill();
+            seg.renderX += (targetX - seg.renderX) * 0.45;
+            seg.renderY += (targetY - seg.renderY) * 0.45;
+
+            return { x: seg.renderX, y: seg.renderY };
         });
-        ctx.restore();
 
-        // PASS B: Render Continuous Organic Body Segments from Tail to Neck (Theme Matched Violet + Cyan)
+        // DISABLE ALL LIGHTING & SHADOW BLUR EFFECTS
+        ctx.save();
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = 'transparent';
+
+        // -------------------------------------------------------------
+        // PASS A: Render Clean Body Segments (Tail to Neck)
+        // -------------------------------------------------------------
         for (let i = total - 1; i >= 1; i--) {
-            const seg = snake[i];
-            const prevSeg = snake[i - 1];
-            const cx = seg.x * GRID_SIZE + GRID_SIZE / 2;
-            const cy = seg.y * GRID_SIZE + GRID_SIZE / 2;
-
-            // Tail Taper Ratio: smoothly tapers tail end
+            const current = renderPoints[i];
+            const next = renderPoints[i - 1]; // segment closer to head
             const progress = i / total;
-            const taperRatio = Math.max(0.52, 1 - Math.pow(progress, 2.2) * 0.48);
-            const radius = (GRID_SIZE / 2 + 1.5) * taperRatio;
 
-            ctx.save();
+            const radius = Math.max(6.5, (GRID_SIZE / 2 + 1) * (1 - Math.pow(progress, 1.5) * 0.45));
+            const nextRadius = Math.max(6.5, (GRID_SIZE / 2 + 1) * (1 - Math.pow((i - 1) / total, 1.5) * 0.45));
 
-            // Outer Neon Glow (Alternating Violet & Cyan Theme Colors)
-            const isViolet = (i % 2 === 0);
-            ctx.shadowColor = isViolet ? '#a855f7' : '#06b6d4';
-            ctx.shadowBlur = 14;
+            const dist = Math.hypot(next.x - current.x, next.y - current.y);
+            const mainColor = '#38bdf8'; // Solid Light Blue
 
-            // 3D Spherical Scale Shading Gradient
-            const bodyGrad = ctx.createRadialGradient(
-                cx - radius * 0.35, cy - radius * 0.35, radius * 0.1,
-                cx, cy, radius * 1.15
-            );
+            // Draw clean solid segment capsule fill
+            ctx.fillStyle = mainColor;
+            const steps = Math.max(3, Math.ceil(dist / 2));
+            for (let s = 0; s <= steps; s++) {
+                const interpX = current.x + (next.x - current.x) * (s / steps);
+                const interpY = current.y + (next.y - current.y) * (s / steps);
+                const interpR = radius + (nextRadius - radius) * (s / steps);
 
-            if (i === 1) { // Neck near head (Bright Magenta/Violet Highlight)
-                bodyGrad.addColorStop(0, '#f5d0fe');
-                bodyGrad.addColorStop(0.45, '#c084fc');
-                bodyGrad.addColorStop(1, '#7e22ce');
-            } else if (isViolet) { // Vibrant Neon Violet Scale
-                bodyGrad.addColorStop(0, '#e9d5ff');
-                bodyGrad.addColorStop(0.5, '#a855f7');
-                bodyGrad.addColorStop(1, '#581c87');
-            } else { // Electric Cyan Scale
-                bodyGrad.addColorStop(0, '#cff4fc');
-                bodyGrad.addColorStop(0.5, '#06b6d4');
-                bodyGrad.addColorStop(1, '#0e7490');
+                ctx.beginPath();
+                ctx.arc(interpX, interpY, interpR, 0, Math.PI * 2);
+                ctx.fill();
             }
 
-            ctx.fillStyle = bodyGrad;
+            // Draw crisp crosshatch scale lines across the light blue body
+            const angle = Math.atan2(next.y - current.y, next.x - current.x);
+            const crossR = radius * 0.85;
 
-            // Connect segment to previous segment for a seamless smooth body
-            const pcx = prevSeg.x * GRID_SIZE + GRID_SIZE / 2;
-            const pcy = prevSeg.y * GRID_SIZE + GRID_SIZE / 2;
-            const angle = Math.atan2(pcy - cy, pcx - cx);
+            ctx.strokeStyle = 'rgba(15, 23, 42, 0.42)'; // Dark navy/cyan crosshatch line
+            ctx.lineWidth = 1.5;
 
+            // Diagonal Cross Line 1 (+45 degrees)
+            const a1 = angle + Math.PI / 4;
             ctx.beginPath();
-            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Segment joint connector capsule (completely bridges body gaps)
-            const connX = cx + Math.cos(angle) * (GRID_SIZE * 0.5);
-            const connY = cy + Math.sin(angle) * (GRID_SIZE * 0.5);
-            ctx.beginPath();
-            ctx.arc(connX, connY, radius * 0.95, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Scale Specular Top Highlight Curve (High Contrast 3D Glass/Crystal Effect)
-            ctx.shadowBlur = 0;
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.arc(cx - radius * 0.15, cy - radius * 0.15, radius * 0.65, Math.PI * 1.15, Math.PI * 1.85);
+            ctx.moveTo(current.x - Math.cos(a1) * crossR, current.y - Math.sin(a1) * crossR);
+            ctx.lineTo(current.x + Math.cos(a1) * crossR, current.y + Math.sin(a1) * crossR);
             ctx.stroke();
 
-            ctx.restore();
+            // Diagonal Cross Line 2 (-45 degrees)
+            const a2 = angle - Math.PI / 4;
+            ctx.beginPath();
+            ctx.moveTo(current.x - Math.cos(a2) * crossR, current.y - Math.sin(a2) * crossR);
+            ctx.lineTo(current.x + Math.cos(a2) * crossR, current.y + Math.sin(a2) * crossR);
+            ctx.stroke();
         }
 
-        // PASS C: Render Radiant Expressive Snake Head (Theme Matched Cyber Gold & Violet)
-        const head = snake[0];
-        const hcx = head.x * GRID_SIZE + GRID_SIZE / 2;
-        const hcy = head.y * GRID_SIZE + GRID_SIZE / 2;
-        const headR = (GRID_SIZE / 2) - 0.5;
+        // -------------------------------------------------------------
+        // PASS B: Render Clean Snake Head
+        // -------------------------------------------------------------
+        const head = renderPoints[0];
+        const headR = (GRID_SIZE / 2) + 2.5;
 
         ctx.save();
-        ctx.translate(hcx, hcy);
+        ctx.translate(head.x, head.y);
 
-        // Rotation angle based on movement direction
-        let headAngle = 0;
-        if (direction.x === 1) headAngle = 0;                  // Right
-        else if (direction.x === -1) headAngle = Math.PI;       // Left
-        else if (direction.y === 1) headAngle = Math.PI / 2;   // Down
-        else if (direction.y === -1) headAngle = -Math.PI / 2; // Up
-        ctx.rotate(headAngle);
+        // Rotation angle
+        let angle = 0;
+        if (renderPoints.length > 1) {
+            angle = Math.atan2(head.y - renderPoints[1].y, head.x - renderPoints[1].x);
+        } else {
+            if (direction.x === 1) angle = 0;
+            else if (direction.x === -1) angle = Math.PI;
+            else if (direction.y === 1) angle = Math.PI / 2;
+            else if (direction.y === -1) angle = -Math.PI / 2;
+        }
+        ctx.rotate(angle);
 
-        // 1. Animated Flickering Forked Red Snake Tongue
-        ctx.save();
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 10;
-        ctx.strokeStyle = '#f43f5e';
-        ctx.fillStyle = '#f43f5e';
-        ctx.lineWidth = 2.2;
+        // 1. Clean Animated Forked Red Tongue
+        const time = Date.now() * 0.01;
+        const flick = Math.sin(time) * 3;
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        ctx.moveTo(headR - 1, 0);
-        ctx.lineTo(headR + 10, 0);
-        ctx.lineTo(headR + 15, -3.5);
-        ctx.moveTo(headR + 10, 0);
-        ctx.lineTo(headR + 15, 3.5);
+        ctx.moveTo(headR * 0.8, 0);
+        ctx.lineTo(headR + 11, flick);
+        ctx.lineTo(headR + 17, flick - 4);
+        ctx.moveTo(headR + 11, flick);
+        ctx.lineTo(headR + 17, flick + 4);
         ctx.stroke();
-        ctx.restore();
 
-        // 2. Head Base Shape - Radiant Cyber Gold & Violet Crown
-        ctx.shadowColor = '#a78bfa';
-        ctx.shadowBlur = 24;
-
-        const headGrad = ctx.createRadialGradient(
-            -headR * 0.35, -headR * 0.35, headR * 0.15,
-            0, 0, headR * 1.25
-        );
-        headGrad.addColorStop(0, '#fef08a');
-        headGrad.addColorStop(0.4, '#f59e0b');
-        headGrad.addColorStop(0.8, '#a855f7');
-        headGrad.addColorStop(1, '#581c87');
-
-        ctx.fillStyle = headGrad;
+        // 2. Clean Solid Head Fill in Yellow Color
+        ctx.fillStyle = '#facc15'; // Vibrant Yellow Head
         ctx.beginPath();
         ctx.arc(0, 0, headR, 0, Math.PI * 2);
         ctx.fill();
 
-        // Crisp White Head Outline
-        ctx.shadowBlur = 0;
+        // Clean Solid White Head Border
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 2.8;
         ctx.stroke();
 
-        // 3. Cute Pink Cheek Accents
-        ctx.fillStyle = 'rgba(244, 114, 182, 0.7)';
+        // 3. Clean Pink Cheek Accents
+        ctx.fillStyle = 'rgba(244, 114, 182, 0.9)';
         ctx.beginPath();
-        ctx.arc(headR * 0.1, -headR * 0.65, 3, 0, Math.PI * 2);
-        ctx.arc(headR * 0.1, headR * 0.65, 3, 0, Math.PI * 2);
+        ctx.arc(headR * 0.1, -headR * 0.65, 3.2, 0, Math.PI * 2);
+        ctx.arc(headR * 0.1, headR * 0.65, 3.2, 0, Math.PI * 2);
         ctx.fill();
 
-        // 4. Large Expressive 3D Eyes with Specular Catchlight
-        const eyeX = headR * 0.35;
-        const eyeY = headR * 0.45;
-        const eyeR = 4.8;
+        // 4. Clean Crisp Arcade Eyes
+        const eyeX = headR * 0.4;
+        const eyeY = headR * 0.5;
+        const eyeR = 5.2;
 
-        [-eyeY, eyeY].forEach(yPos => {
-            // White Eye Base
+        [-eyeY, eyeY].forEach(y => {
+            // White Outer Sclera
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(eyeX, yPos, eyeR, 0, Math.PI * 2);
+            ctx.arc(eyeX, y, eyeR, 0, Math.PI * 2);
             ctx.fill();
 
-            // Sapphire Blue Pupil
+            // Sapphire Iris
             ctx.fillStyle = '#0284c7';
             ctx.beginPath();
-            ctx.arc(eyeX + 1.2, yPos, eyeR * 0.65, 0, Math.PI * 2);
+            ctx.arc(eyeX + 1.2, y, eyeR * 0.65, 0, Math.PI * 2);
             ctx.fill();
 
-            // White Specular Catchlight Highlight
+            // Deep Pupil
+            ctx.fillStyle = '#090d16';
+            ctx.beginPath();
+            ctx.arc(eyeX + 1.6, y, eyeR * 0.35, 0, Math.PI * 2);
+            ctx.fill();
+
+            // White Eye Shine Dot
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.arc(eyeX - 0.8, yPos - 1.4, 1.6, 0, Math.PI * 2);
+            ctx.arc(eyeX - 0.6, y - 1.5, 1.8, 0, Math.PI * 2);
             ctx.fill();
         });
 
+        // 5. Nostrils
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.beginPath();
+        ctx.arc(headR * 1.05, -2.5, 1.2, 0, Math.PI * 2);
+        ctx.arc(headR * 1.05, 2.5, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
         ctx.restore();
     }
 }
