@@ -22,20 +22,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Check if roll number already exists
-    const existing = await db.getOne(
-      'SELECT id FROM users WHERE roll_number = $1',
-      [actualRollNumber]
-    );
-
-    if (existing) {
-      return res.status(409).json({ 
-        success: false,
-        error: 'Roll number already registered' 
-      });
-    }
-
-    // Create user
+    // Create user (allow multiple entries even with same roll number / class / name)
     const sessionToken = uuidv4();
     const result = await db.insert(
       `INSERT INTO users (name, roll_number, class, session_token, game_status) 

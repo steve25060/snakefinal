@@ -116,22 +116,11 @@ const Auth = {
         try {
             console.log('🔐 Attempting to register/login...');
             
-            // First try to register
+            // Always register a new entry/session for the player
             let response = await apiRequest('/auth/register', {
                 method: 'POST',
                 body: { name, class: playerClass, rollNumber },
                 includeToken: false
-            }).catch(async (error) => {
-                // If registration fails (likely because already registered), try login
-                console.log('Register failed, trying login...', error.message);
-                if (error.message && error.message.includes('registered')) {
-                    return await apiRequest('/auth/login', {
-                        method: 'POST',
-                        body: { name, class: playerClass, rollNumber },
-                        includeToken: false
-                    });
-                }
-                throw error;
             });
 
             if (response.success) {
