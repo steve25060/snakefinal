@@ -436,13 +436,13 @@ function startLoop() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
     
     // Q1 - Q15: Base comfortable speed (250ms per tick)
-    // Q16: 220ms, Q17: 190ms, Q18: 160ms, Q19: 130ms, Q20: 100ms
+    // Q16: 220ms, Q17: 190ms, Q18: 160ms, Q19: 130ms, Q20: 130ms (same as Q19)
     let speed = BASE_SPEED;
     const qNum = (typeof currentQuestion !== 'undefined' && currentQuestion) ? currentQuestion : (window.currentQuestion || 1);
 
     if (qNum >= 16) {
-        const step = Math.min(qNum, 20) - 15; // 1 for Q16, 2 for Q17, ..., 5 for Q20
-        speed = BASE_SPEED - (step * 30);     // 250ms -> 220ms -> 190ms -> 160ms -> 130ms -> 100ms
+        const step = Math.min(qNum, 19) - 15; // 1 for Q16 (220ms), 2 for Q17 (190ms), 3 for Q18 (160ms), 4 for Q19 & Q20 (130ms)
+        speed = BASE_SPEED - (step * 30);
     }
 
     console.log(`⚡ Game speed for Question ${qNum}: ${speed}ms per update`);
