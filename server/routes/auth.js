@@ -60,12 +60,6 @@ router.post('/register', async (req, res) => {
     });
 
   } catch (error) {
-    if (error.code === '23505') {
-      return res.status(409).json({ 
-        success: false,
-        error: 'Roll number already registered' 
-      });
-    }
     console.error('Registration error:', error);
     res.status(500).json({ 
       success: false,

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   class TEXT,
-  roll_number TEXT NOT NULL UNIQUE,
+  roll_number TEXT NOT NULL,
   session_token TEXT,
   score INTEGER DEFAULT 0,
   correct_answers INTEGER DEFAULT 0,

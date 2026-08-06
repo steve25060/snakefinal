@@ -77,6 +77,7 @@
           <button class="filter-btn" onclick="loadAdminLeaderboard('top20')">Top 20</button>
           <button class="filter-btn" onclick="loadAdminLeaderboard('top50')">Top 50</button>
           <button class="filter-btn" onclick="loadAdminLeaderboard('top100')">Top 100</button>
+          <button class="filter-btn" onclick="loadAdminLeaderboard('top200')">Top 200</button>
           <button class="filter-btn" onclick="loadAdminLeaderboard('all')">All</button>
         </div>
 
@@ -287,6 +288,7 @@
         else if (type === 'top20') limit = 20;
         else if (type === 'top50') limit = 50;
         else if (type === 'top100') limit = 100;
+        else if (type === 'top200') limit = 200;
         else limit = 1000;
 
         const response = await apiCall(`/api/leaderboard/top/${limit}`, 'GET');

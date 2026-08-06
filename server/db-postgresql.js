@@ -164,6 +164,14 @@ async function initializeDatabase() {
       console.log('✅ Database schema already exists');
     }
 
+    // Drop UNIQUE constraint on users.roll_number if it exists so duplicate roll numbers are allowed
+    try {
+      await pool.query('ALTER TABLE users DROP CONSTRAINT IF EXISTS users_roll_number_key;');
+      console.log('✅ Dropped UNIQUE constraint on users.roll_number (multiple entries allowed)');
+    } catch (dropErr) {
+      console.warn('Notice dropping unique constraint:', dropErr.message);
+    }
+
     // Sync questions if database has no questions or if questions need updating to balanced A-D options
     const qCountRes = await pool.query('SELECT COUNT(*) as count FROM questions');
     const aOnlyRes = await pool.query("SELECT COUNT(*) as count FROM questions WHERE correct_option = 'A'");

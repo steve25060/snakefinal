@@ -13,17 +13,7 @@ class AuthController {
         return res.status(400).json({ error: 'Name and roll number required' });
       }
 
-      // Check if roll number already exists
-      const [existing] = await pool.query(
-        'SELECT id FROM users WHERE roll_number = ?',
-        [rollNumber]
-      );
-
-      if (existing.length > 0) {
-        return res.status(409).json({ error: 'Roll number already registered' });
-      }
-
-      // Create session token
+      // Create session token (allow multiple entries even with same roll number / class / name)
       const sessionToken = uuidv4();
 
       // Insert new player

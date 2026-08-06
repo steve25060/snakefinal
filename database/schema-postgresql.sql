@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   class VARCHAR(100),
-  roll_number VARCHAR(50) NOT NULL UNIQUE,
+  roll_number VARCHAR(50) NOT NULL,
   session_token VARCHAR(255),
   score INTEGER DEFAULT 0,
   correct_answers INTEGER DEFAULT 0,
