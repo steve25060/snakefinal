@@ -252,7 +252,7 @@ function draw() {
             const dist = Math.hypot(next.x - current.x, next.y - current.y);
             const mainColor = '#38bdf8'; // Solid Light Blue
 
-            // Draw clean solid segment capsule fill
+            // Draw continuous solid segment capsule fill
             ctx.fillStyle = mainColor;
             const steps = Math.max(3, Math.ceil(dist / 2));
             for (let s = 0; s <= steps; s++) {
@@ -265,26 +265,32 @@ function draw() {
                 ctx.fill();
             }
 
-            // Draw crisp crosshatch scale lines across the light blue body
+            // Draw seamless gapless crosshatch scale lines at close sub-step intervals
             const angle = Math.atan2(next.y - current.y, next.x - current.x);
-            const crossR = radius * 0.85;
+            const a1 = angle + Math.PI / 4;
+            const a2 = angle - Math.PI / 4;
 
             ctx.strokeStyle = 'rgba(15, 23, 42, 0.42)'; // Dark navy/cyan crosshatch line
-            ctx.lineWidth = 1.5;
+            ctx.lineWidth = 1.4;
 
-            // Diagonal Cross Line 1 (+45 degrees)
-            const a1 = angle + Math.PI / 4;
-            ctx.beginPath();
-            ctx.moveTo(current.x - Math.cos(a1) * crossR, current.y - Math.sin(a1) * crossR);
-            ctx.lineTo(current.x + Math.cos(a1) * crossR, current.y + Math.sin(a1) * crossR);
-            ctx.stroke();
+            const crossSteps = Math.max(2, Math.floor(dist / 6)); // Draw every ~6px with zero gaps
+            for (let cs = 0; cs < crossSteps; cs++) {
+                const cx = current.x + (next.x - current.x) * (cs / crossSteps);
+                const cy = current.y + (next.y - current.y) * (cs / crossSteps);
+                const cRadius = (radius + (nextRadius - radius) * (cs / crossSteps)) * 0.9;
 
-            // Diagonal Cross Line 2 (-45 degrees)
-            const a2 = angle - Math.PI / 4;
-            ctx.beginPath();
-            ctx.moveTo(current.x - Math.cos(a2) * crossR, current.y - Math.sin(a2) * crossR);
-            ctx.lineTo(current.x + Math.cos(a2) * crossR, current.y + Math.sin(a2) * crossR);
-            ctx.stroke();
+                // Diagonal Cross Line 1 (+45°)
+                ctx.beginPath();
+                ctx.moveTo(cx - Math.cos(a1) * cRadius, cy - Math.sin(a1) * cRadius);
+                ctx.lineTo(cx + Math.cos(a1) * cRadius, cy + Math.sin(a1) * cRadius);
+                ctx.stroke();
+
+                // Diagonal Cross Line 2 (-45°)
+                ctx.beginPath();
+                ctx.moveTo(cx - Math.cos(a2) * cRadius, cy - Math.sin(a2) * cRadius);
+                ctx.lineTo(cx + Math.cos(a2) * cRadius, cy + Math.sin(a2) * cRadius);
+                ctx.stroke();
+            }
         }
 
         // -------------------------------------------------------------
@@ -425,14 +431,21 @@ function update() {
     snake.pop();
 }
 
-// Game loop - Constant comfortable speed throughout all questions (same as Question 1)
+// Game loop - Progressive speed increase for Questions 16 to 20
 function startLoop() {
     if (gameLoopInterval) clearInterval(gameLoopInterval);
     
-    // Constant speed for all questions (250ms per update)
-    const speed = BASE_SPEED;
-    
-    console.log(`⚡ Game speed: ${speed}ms per update (Constant speed across all questions)`);
+    // Q1 - Q15: Base comfortable speed (250ms per tick)
+    // Q16: 220ms, Q17: 190ms, Q18: 160ms, Q19: 130ms, Q20: 100ms
+    let speed = BASE_SPEED;
+    const qNum = (typeof currentQuestion !== 'undefined' && currentQuestion) ? currentQuestion : (window.currentQuestion || 1);
+
+    if (qNum >= 16) {
+        const step = Math.min(qNum, 20) - 15; // 1 for Q16, 2 for Q17, ..., 5 for Q20
+        speed = BASE_SPEED - (step * 30);     // 250ms -> 220ms -> 190ms -> 160ms -> 130ms -> 100ms
+    }
+
+    console.log(`⚡ Game speed for Question ${qNum}: ${speed}ms per update`);
     
     gameLoopInterval = setInterval(() => {
         update();
