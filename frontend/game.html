@@ -121,6 +121,17 @@
         // INIT - runs on page load (handles refresh recovery)
         // =====================================================
         document.addEventListener('DOMContentLoaded', async () => {
+            // Protect questions: disable right-click, selection, dragging, and copy shortcuts
+            document.addEventListener('contextmenu', e => e.preventDefault());
+            document.addEventListener('selectstart', e => e.preventDefault());
+            document.addEventListener('dragstart', e => e.preventDefault());
+            document.addEventListener('copy', e => e.preventDefault());
+            document.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && ['c', 'c', 'u', 's', 'p'].includes(e.key.toLowerCase())) {
+                    e.preventDefault();
+                }
+            });
+
             requireLogin();
 
             try {
