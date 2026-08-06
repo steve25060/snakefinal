@@ -119,7 +119,7 @@ const Auth = {
             // First try to register
             let response = await apiRequest('/auth/register', {
                 method: 'POST',
-                body: { name, rollNumber },
+                body: { name, class: playerClass, rollNumber },
                 includeToken: false
             }).catch(async (error) => {
                 // If registration fails (likely because already registered), try login
@@ -127,7 +127,7 @@ const Auth = {
                 if (error.message && error.message.includes('registered')) {
                     return await apiRequest('/auth/login', {
                         method: 'POST',
-                        body: { rollNumber },
+                        body: { name, class: playerClass, rollNumber },
                         includeToken: false
                     });
                 }

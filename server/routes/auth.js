@@ -93,10 +93,11 @@ router.post('/register', async (req, res) => {
  */
 router.post('/login', async (req, res) => {
   try {
-    const { rollNumber, roll_number } = req.body;
+    const { rollNumber, roll_number, class: userClass, className, playerClass } = req.body;
     
     // Accept both formats
     const actualRollNumber = rollNumber || roll_number;
+    const actualClass = userClass || className || playerClass;
 
     if (!actualRollNumber) {
       return res.status(400).json({ 
@@ -129,9 +130,10 @@ router.post('/login', async (req, res) => {
         wrong_answers = 0,
         skipped_answers = 0,
         completed_at = NULL,
-        total_time_seconds = NULL
-       WHERE id = $2`,
-      [sessionToken, user.id]
+        total_time_seconds = NULL,
+        class = CASE WHEN $2 != '' THEN $2 ELSE class END
+       WHERE id = $3`,
+      [sessionToken, actualClass || '', user.id]
     );
 
     // Check for existing active session
